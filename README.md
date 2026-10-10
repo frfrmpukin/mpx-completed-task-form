@@ -30,6 +30,10 @@ This app reports task completions; it is not a task manager or PAP system.
 
 ## Task and completion fields
 
+The task forms mark **Required** fields in red, **Optional** fields in green,
+and **Conditional** fields in amber. Conditional fields are required only when
+their related option is enabled.
+
 | Field | Required? | Purpose and impact |
 |---|---|---|
 | **Task name** | Yes | Short title shown in task lists, history, and reports. |
@@ -67,7 +71,7 @@ python /home/allianceserver/myauth/manage.py collectstatic --noinput
 supervisorctl restart myauth:
 ```
 
-Alliance Auth hooks add the **Task Reports** navigation link for users granted
+Alliance Auth hooks add the **Task Reporter** navigation link for users granted
 the access permission. Task creation, completion approval, report visibility,
 and CSV export are controlled by Django permissions and task-specific
 group/user assignments. Department-level permissions are assigned to the

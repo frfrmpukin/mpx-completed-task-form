@@ -8,6 +8,20 @@ from .models import Task, TaskCompletion
 
 
 class TaskForm(forms.ModelForm):
+    REQUIREMENT_LABELS = {
+        "title": ("Required", "required"),
+        "instructions": ("Required", "required"),
+        "department_group": ("Required", "required"),
+        "assigned_groups": ("Optional", "optional"),
+        "assigned_users": ("Optional", "optional"),
+        "requires_approval": ("Optional", "optional"),
+        "approver_groups": ("Conditional", "conditional"),
+        "approver_users": ("Conditional", "conditional"),
+        "frequency": ("Required", "required"),
+        "max_completions": ("Optional", "optional"),
+        "limit_scope": ("Optional", "optional"),
+    }
+
     class Meta:
         model = Task
         fields = (
@@ -112,6 +126,12 @@ class TaskForm(forms.ModelForm):
         self.fields["approver_users"].queryset = (
             user_queryset.order_by(user_model.USERNAME_FIELD)
         )
+        self._set_requirement_labels()
+
+    def _set_requirement_labels(self):
+        for name, (label, style) in self.REQUIREMENT_LABELS.items():
+            self.fields[name].widget.attrs["data-requirement-label"] = label
+            self.fields[name].widget.attrs["data-requirement-style"] = style
 
     def clean(self):
         cleaned_data = super().clean()
@@ -141,6 +161,11 @@ class TaskForm(forms.ModelForm):
 
 
 class TaskCompletionForm(forms.ModelForm):
+    REQUIREMENT_LABELS = {
+        "completed_at": ("Required", "required"),
+        "notes": ("Optional", "optional"),
+    }
+
     class Meta:
         model = TaskCompletion
         fields = ("completed_at", "notes")
@@ -165,6 +190,9 @@ class TaskCompletionForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        for name, (label, style) in self.REQUIREMENT_LABELS.items():
+            self.fields[name].widget.attrs["data-requirement-label"] = label
+            self.fields[name].widget.attrs["data-requirement-style"] = style
         self.fields["completed_at"].input_formats = ["%Y-%m-%dT%H:%M"]
         if not self.is_bound and not self.instance.pk:
             self.fields["completed_at"].initial = timezone.localtime().strftime(
@@ -197,6 +225,16 @@ class TaskReviewForm(forms.Form):
             "approval. The pilot can see this feedback."
         ),
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        requirement_labels = {
+            "action": ("Required", "required"),
+            "review_notes": ("Conditional", "conditional"),
+        }
+        for name, (label, style) in requirement_labels.items():
+            self.fields[name].widget.attrs["data-requirement-label"] = label
+            self.fields[name].widget.attrs["data-requirement-style"] = style
 
     def clean(self):
         cleaned_data = super().clean()

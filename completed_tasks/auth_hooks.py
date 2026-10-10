@@ -19,7 +19,7 @@ def register_urls():
 @hooks.register("menu_item_hook")
 def register_menu():
     return TaskReportsMenuItemHook(
-        "Task Reports",
+        "Task Reporter",
         "fas fa-list-check fa-fw",
         "completed_tasks:dashboard",
         order=1110,

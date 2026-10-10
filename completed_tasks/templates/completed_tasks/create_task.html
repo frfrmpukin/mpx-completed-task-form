@@ -11,6 +11,14 @@
             Fields are marked by their help text; at least one eligible group or individual
             is required, and approvers are required only when approval is enabled.
         </p>
+        <div class="d-flex flex-wrap gap-3 mb-3" aria-label="Field requirement legend">
+            <span><span class="badge text-bg-danger">Required</span> Must be filled in</span>
+            <span><span class="badge text-bg-success">Optional</span> Can be left blank</span>
+            <span><span class="badge text-bg-warning">Conditional</span> Required only when the related option is enabled</span>
+        </div>
+        <div class="alert alert-info py-2" role="note">
+            Assigned groups and individuals are each optional, but select at least one of them to make the task available to someone.
+        </div>
         <div class="card"><div class="card-body">
             <form method="post">
                 {% csrf_token %}

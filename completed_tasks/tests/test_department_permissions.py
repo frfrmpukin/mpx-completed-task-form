@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
 from django.test import RequestFactory, TestCase
 
-from completed_tasks.forms import TaskForm
+from completed_tasks.forms import TaskCompletionForm, TaskForm
 from completed_tasks.models import Task, TaskCompletion
 from completed_tasks.views import (
     _can_approve,
@@ -63,6 +63,27 @@ class DepartmentPermissionsTests(TestCase):
         self.assertQuerySetEqual(
             form.fields["department_group"].queryset,
             [self.department],
+        )
+
+    def test_forms_mark_required_optional_and_conditional_fields(self):
+        form = TaskForm(department_queryset=Group.objects.all())
+        completion_form = TaskCompletionForm()
+
+        self.assertEqual(
+            form.fields["title"].widget.attrs["data-requirement-label"],
+            "Required",
+        )
+        self.assertEqual(
+            form.fields["assigned_groups"].widget.attrs["data-requirement-label"],
+            "Optional",
+        )
+        self.assertEqual(
+            form.fields["approver_groups"].widget.attrs["data-requirement-label"],
+            "Conditional",
+        )
+        self.assertEqual(
+            completion_form.fields["notes"].widget.attrs["data-requirement-label"],
+            "Optional",
         )
 
     def test_csv_export_contains_only_authorized_department_reports(self):

@@ -95,6 +95,9 @@ h3 { margin: 0; font-size: 16px; font-weight: 620; }
 .badge.green { color: #0f5132; background: #d1e7dd; }
 .badge.red { color: #842029; background: #f8d7da; }
 .badge.gray { color: #495057; background: #e9ecef; }
+.badge.requirement-required { color: #842029; background: #f8d7da; border: 1px solid #f1aeb5; }
+.badge.requirement-optional { color: #0f5132; background: #d1e7dd; border: 1px solid #a3cfbb; }
+.badge.requirement-conditional { color: #664d03; background: #fff3cd; border: 1px solid #ffecb5; }
 .task-top { display: flex; align-items: start; gap: 7px; }
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; }
@@ -139,12 +142,12 @@ textarea { min-height: 92px; resize: vertical; }
 <header class="topbar">
     <div class="brand">Alliance Auth</div>
     <div class="section">/</div>
-    <div class="section">Task Reports</div>
+    <div class="section">Task Reporter</div>
     <div class="user">Signed in as Pilot</div>
 </header>
 <div class="layout">
     <aside aria-label="Mockup page navigation">
-        <div class="nav-label">Task Reports</div>
+        <div class="nav-label">Task Reporter</div>
         <button class="nav-item active" data-screen="dashboard"><span class="nav-icon">▦</span> My dashboard</button>
         <button class="nav-item" data-screen="create"><span class="nav-icon">＋</span> Create task</button>
         <button class="nav-item" data-screen="submit"><span class="nav-icon">✓</span> Report completion</button>
@@ -221,17 +224,20 @@ textarea { min-height: 92px; resize: vertical; }
             <h1>Create task</h1>
             <p class="subtle">Define the task, who can report it, and how completions are reviewed.</p>
             <div class="card form"><div class="card-body">
-                <div class="field"><label>Task name</label><input type="text" value="Scan structures in a system"></div>
-                <div class="field"><label>Instructions</label><textarea>Scan the requested structures. In your report, list the systems you visited. Structure details remain in the existing scanning module.</textarea><div class="help">Shown to members when they report completion.</div></div>
+                <div class="notice"><span class="badge requirement-required">Required</span> Must be filled in. <span class="badge requirement-optional">Optional</span> Can be left blank. <span class="badge requirement-conditional">Conditional</span> Required only when the related option is enabled.</div>
+                <div class="field"><label>Task name <span class="badge requirement-required">Required</span></label><input type="text" value="Scan structures in a system"></div>
+                <div class="field"><label>Instructions <span class="badge requirement-required">Required</span></label><textarea>Scan the requested structures. In your report, list the systems you visited. Structure details remain in the existing scanning module.</textarea><div class="help">Shown to members when they report completion.</div></div>
                 <div class="notice">Your department choices are limited to groups where you have task-creation permission. Admins with global permission can create tasks for any department.</div>
-                <div class="field"><label>Department</label><select><option>Select an authorized department</option><option selected>Exploration</option></select></div>
-                <div class="field"><label>Who can report this task?</label><select multiple size="3"><option selected>Exploration Pilots</option><option>Scouting Group</option><option>Specific individuals…</option></select><div class="help">Choose one or more groups; selected individuals can also be assigned.</div></div>
-                <div class="field check"><input type="checkbox" checked><label>Each completion requires approval</label></div>
-                <div class="field"><label>Who can approve completions?</label><select multiple size="2"><option selected>Exploration Leads</option><option>Specific individuals…</option></select></div>
-                <div class="field"><label>Task type</label><select><option>One time — closes after approved completion</option><option selected>Ongoing — remains available for repeat completions</option></select></div>
+                <div class="field"><label>Department <span class="badge requirement-required">Required</span></label><select><option>Select an authorized department</option><option selected>Exploration</option></select></div>
+                <div class="field"><label>Assigned groups <span class="badge requirement-optional">Optional</span></label><select multiple size="3"><option selected>Exploration Pilots</option><option>Scouting Group</option><option>Specific individuals…</option></select><div class="help">Each assignment field is optional, but choose at least one group or individual overall.</div></div>
+                <div class="field"><label>Assigned individuals <span class="badge requirement-optional">Optional</span></label><select multiple size="3"><option>Pilot One</option><option>Pilot Two</option></select></div>
+                <div class="field check"><input type="checkbox" checked><label>Each completion requires approval <span class="badge requirement-optional">Optional</span></label></div>
+                <div class="field"><label>Approver groups <span class="badge requirement-conditional">Conditional</span></label><select multiple size="2"><option selected>Exploration Leads</option><option>Specific individuals…</option></select><div class="help">Required when approval is enabled.</div></div>
+                <div class="field"><label>Approver individuals <span class="badge requirement-conditional">Conditional</span></label><select multiple size="2"><option>Reviewer One</option><option>Reviewer Two</option></select></div>
+                <div class="field"><label>Task type <span class="badge requirement-required">Required</span></label><select><option>One time — closes after approved completion</option><option selected>Ongoing — remains available for repeat completions</option></select></div>
                 <div class="grid two">
-                    <div class="field"><label>Completion limit (optional)</label><input type="number" value="3" min="1"><div class="help">Lifetime cap; leave blank for no cap.</div></div>
-                    <div class="field"><label>Limit applies to</label><select><option selected>Each pilot individually</option><option>Everyone combined</option></select></div>
+                    <div class="field"><label>Completion limit <span class="badge requirement-optional">Optional</span></label><input type="number" value="3" min="1"><div class="help">Lifetime cap; leave blank for no cap.</div></div>
+                    <div class="field"><label>Limit applies to <span class="badge requirement-optional">Optional</span></label><select><option selected>Each pilot individually</option><option>Everyone combined</option></select></div>
                 </div>
                 <div class="actions"><button class="btn">Create task</button><button class="btn outline" data-go="dashboard">Cancel</button></div>
             </div></div>
@@ -245,8 +251,8 @@ textarea { min-height: 92px; resize: vertical; }
                     <div class="task-top"><h3>Scan structures in a system</h3><span class="spacer"></span><span class="badge yellow">Approval required</span></div>
                     <p class="muted" style="margin:10px 0 0">Scan the requested structures. In your report, list the systems you visited.</p>
                 </div></div>
-                <div class="field"><label>Completion date and time</label><input type="datetime-local" value="2026-10-10T14:30"></div>
-                <div class="field"><label>Notes</label><textarea placeholder="Which systems did you scan? Include a brief summary of what you completed."></textarea><div class="help">Optional. Detailed structure data is handled by the existing module.</div></div>
+                <div class="field"><label>Completion date and time <span class="badge requirement-required">Required</span></label><input type="datetime-local" value="2026-10-10T14:30"></div>
+                <div class="field"><label>Notes <span class="badge requirement-optional">Optional</span></label><textarea placeholder="Which systems did you scan? Include a brief summary of what you completed."></textarea><div class="help">Optional. Detailed structure data is handled by the existing module.</div></div>
                 <div class="notice">This task requires approval. Your report will appear as pending until it is reviewed.</div>
                 <div class="actions"><button class="btn">Submit completion</button><button class="btn outline" data-go="dashboard">Cancel</button></div>
             </div></div>
