@@ -30,6 +30,10 @@ This app reports task completions; it is not a task manager or PAP system.
 
 ## Task and completion fields
 
+The task-creation page is divided into four steps: task details, eligible
+members, completion approval, and repeat submissions/limits. Each section
+explains the effect of its choices before the fields.
+
 The task forms mark **Required** fields in red, **Optional** fields in green,
 and **Conditional** fields in amber. Conditional fields are required only when
 their related option is enabled.

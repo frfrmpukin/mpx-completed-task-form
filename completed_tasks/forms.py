@@ -127,6 +127,59 @@ class TaskForm(forms.ModelForm):
             user_queryset.order_by(user_model.USERNAME_FIELD)
         )
         self._set_requirement_labels()
+        self.sections = (
+            {
+                "title": "1. Task details",
+                "description": (
+                    "Name the work and explain what a member should do. Choose "
+                    "the department that owns this task; this affects department "
+                    "permissions and reporting."
+                ),
+                "fields": (
+                    self["title"],
+                    self["instructions"],
+                    self["department_group"],
+                ),
+            },
+            {
+                "title": "2. Who can complete this task?",
+                "description": (
+                    "Selected groups and individuals are combined: anyone in a "
+                    "selected group or any selected individual can submit a "
+                    "completion. At least one group or individual is required."
+                ),
+                "fields": (
+                    self["assigned_groups"],
+                    self["assigned_users"],
+                ),
+            },
+            {
+                "title": "3. Completion approval",
+                "description": (
+                    "Choose whether a submission is accepted immediately or "
+                    "waits for review. If approval is enabled, at least one "
+                    "approver group or individual is required."
+                ),
+                "fields": (
+                    self["requires_approval"],
+                    self["approver_groups"],
+                    self["approver_users"],
+                ),
+            },
+            {
+                "title": "4. Repeat submissions and limits",
+                "description": (
+                    "Choose whether this is a one-time task or remains available "
+                    "for repeated reports. An optional completion cap is a "
+                    "lifetime total; it does not reset on a schedule."
+                ),
+                "fields": (
+                    self["frequency"],
+                    self["max_completions"],
+                    self["limit_scope"],
+                ),
+            },
+        )
 
     def _set_requirement_labels(self):
         for name, (label, style) in self.REQUIREMENT_LABELS.items():

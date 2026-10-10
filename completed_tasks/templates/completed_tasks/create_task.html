@@ -6,25 +6,36 @@
 <div class="container-fluid mt-4">
     <div class="row"><div class="col-12 col-xl-8">
         <h1 class="h2 mb-2">Create task</h1>
-        <p class="text-body-secondary mb-4">
-            Define the work members should report and what happens after they submit it.
-            Fields are marked by their help text; at least one eligible group or individual
-            is required, and approvers are required only when approval is enabled.
+        <p class="text-body-secondary mb-3">
+            Set up the task step by step. Each section explains how its choices
+            affect who can report work and what happens after submission.
         </p>
         <div class="d-flex flex-wrap gap-3 mb-3" aria-label="Field requirement legend">
             <span><span class="badge text-bg-danger">Required</span> Must be filled in</span>
             <span><span class="badge text-bg-success">Optional</span> Can be left blank</span>
             <span><span class="badge text-bg-warning">Conditional</span> Required only when the related option is enabled</span>
         </div>
-        <div class="alert alert-info py-2" role="note">
-            Assigned groups and individuals are each optional, but select at least one of them to make the task available to someone.
-        </div>
         <div class="card"><div class="card-body">
             <form method="post">
                 {% csrf_token %}
-                {% include "completed_tasks/_form_fields.html" %}
-                <button type="submit" class="btn btn-primary">Create task</button>
-                <a class="btn btn-outline-secondary" href="{% url 'completed_tasks:dashboard' %}">Cancel</a>
+                {% for section in form.sections %}
+                <section class="card mb-4" aria-labelledby="task-section-{{ forloop.counter }}">
+                    <div class="card-body">
+                        <h2 id="task-section-{{ forloop.counter }}" class="h5">{{ section.title }}</h2>
+                        <p class="text-body-secondary">{{ section.description }}</p>
+                        {% for field in section.fields %}
+                        {% include "completed_tasks/_form_field.html" with field=field %}
+                        {% endfor %}
+                    </div>
+                </section>
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                <div class="alert alert-danger" role="alert">{{ error }}</div>
+                {% endfor %}
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">Create task</button>
+                    <a class="btn btn-outline-secondary" href="{% url 'completed_tasks:dashboard' %}">Cancel</a>
+                </div>
             </form>
         </div></div>
     </div></div>
