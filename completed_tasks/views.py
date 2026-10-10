@@ -1,6 +1,7 @@
 import csv
 
 from django.contrib import messages
+from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.models import Group
 from django.core.exceptions import PermissionDenied
@@ -11,7 +12,14 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 
-from .forms import TaskCompletionForm, TaskForm, TaskReviewForm
+from allianceauth.eveonline.models import EveCharacter
+
+from .forms import (
+    TaskBulkCompletionForm,
+    TaskCompletionForm,
+    TaskForm,
+    TaskReviewForm,
+)
 from .models import Task, TaskCompletion
 
 
@@ -43,6 +51,53 @@ def _can_manage_task(user, task):
     )
 
 
+def _can_bulk_submit(user, task):
+    return (
+        task.allow_bulk_submissions
+        and task.frequency == Task.Frequency.ONGOING
+        and (
+            user.has_perm("completed_tasks.submit_bulk_task_completions")
+            or (
+                task.department_group_id is not None
+                and _department_groups_with_permission(
+                    user, "submit_department_task_completions"
+                ).filter(pk=task.department_group_id).exists()
+            )
+        )
+    )
+
+
+def _can_close_task(user, task):
+    return (
+        task.created_by_id == user.pk
+        or _can_manage_task(user, task)
+        or _can_bulk_submit(user, task)
+    )
+
+
+def _eligible_users(task):
+    user_model = get_user_model()
+    users = user_model._default_manager.filter(
+        Q(groups__in=task.assigned_groups.all())
+        | Q(pk__in=task.assigned_users.values("pk"))
+    ).distinct()
+    if any(field.name == "is_active" for field in user_model._meta.fields):
+        users = users.filter(is_active=True)
+    return users
+
+
+def _eligible_characters(task):
+    return EveCharacter.objects.filter(
+        character_ownership__user__in=_eligible_users(task)
+    ).select_related("character_ownership__user").order_by("character_name")
+
+
+def _characters_for_user(user):
+    return EveCharacter.objects.filter(
+        character_ownership__user=user
+    ).select_related("character_ownership__user").order_by("character_name")
+
+
 def _csv_cell(value):
     text = "" if value is None else str(value)
     if text.lstrip(" \t\r\n").startswith(("=", "+", "-", "@")):
@@ -64,13 +119,39 @@ def _can_approve(task, user):
     )
 
 
-def _completion_limit_reached(task, user):
+def _completion_limit_reached(task, user, character=None):
     if task.max_completions is None:
         return False
     completions = task.completions.exclude(status=TaskCompletion.Status.DENIED)
     if task.limit_scope == Task.LimitScope.PER_USER:
-        completions = completions.filter(user=user)
+        if character is not None:
+            completions = completions.filter(
+                Q(character=character) | Q(character__isnull=True, user=user)
+            )
+        else:
+            characters = _characters_for_user(user)
+            if not characters.exists():
+                return False
+            return all(
+                _completion_limit_reached(task, user, pilot_character)
+                for pilot_character in characters
+            )
     return completions.count() >= task.max_completions
+
+
+def _bulk_limit_reached(task, characters):
+    if task.max_completions is None:
+        return False
+    if task.limit_scope == Task.LimitScope.SHARED:
+        return _completion_limit_reached(task, None)
+    return all(
+        _completion_limit_reached(
+            task,
+            character.character_ownership.user,
+            character,
+        )
+        for character in characters
+    )
 
 
 def _task_has_open_one_time_completion(task):
@@ -93,6 +174,7 @@ def _require_task_access(request, task):
         or task.created_by_id == request.user.pk
         or _can_approve(task, request.user)
         or request.user.has_perm("completed_tasks.view_all_completions")
+        or _can_bulk_submit(request.user, task)
     ):
         raise PermissionDenied
 
@@ -103,8 +185,14 @@ def dashboard(request):
     user = request.user
     can_view_all = user.has_perm("completed_tasks.view_all_completions")
     can_manage = user.has_perm("completed_tasks.add_task")
+    can_bulk_submit_any = user.has_perm(
+        "completed_tasks.submit_bulk_task_completions"
+    )
     manageable_departments = _department_groups_with_permission(
         user, "add_department_tasks"
+    )
+    bulk_departments = _department_groups_with_permission(
+        user, "submit_department_task_completions"
     )
     can_approve_any = user.has_perm("completed_tasks.approve_task_completions")
     can_view_departments = _department_groups_with_permission(
@@ -123,8 +211,15 @@ def dashboard(request):
         )
     else:
         task_scope = models_q_for_user(user) | Q(created_by=user)
+        if can_bulk_submit_any:
+            task_scope |= Q(allow_bulk_submissions=True)
         if manageable_departments.exists():
             task_scope |= Q(department_group__in=manageable_departments)
+        if bulk_departments.exists():
+            task_scope |= Q(
+                department_group__in=bulk_departments,
+                allow_bulk_submissions=True,
+            )
         if can_view_departments.exists():
             task_scope |= Q(department_group__in=can_view_departments)
         tasks = (
@@ -140,11 +235,11 @@ def dashboard(request):
             )
         )
     own_completions = TaskCompletion.objects.filter(user=user).select_related(
-        "task", "task__department_group", "reviewer"
+        "task", "task__department_group", "reviewer", "character", "submitted_by"
     )[:50]
     pending_reviews = TaskCompletion.objects.filter(
         status=TaskCompletion.Status.PENDING
-    ).select_related("task", "user")
+    ).select_related("task", "user", "character", "submitted_by")
     if not can_approve_any:
         approval_scope = Q(task__approver_users=user) | Q(
             task__approver_groups__in=user.groups.all()
@@ -160,20 +255,36 @@ def dashboard(request):
         if _task_has_open_one_time_completion(task):
             continue
         assigned = _is_assigned(task, user)
+        has_registered_character = _characters_for_user(user).exists()
         limit_reached = _completion_limit_reached(task, user)
-        can_submit = assigned and not limit_reached
+        can_submit = assigned and has_registered_character and not limit_reached
+        bulk_authorized = _can_bulk_submit(user, task)
+        eligible_characters = _eligible_characters(task)
+        has_eligible_characters = eligible_characters.exists()
+        can_bulk_submit = (
+            bulk_authorized
+            and has_eligible_characters
+            and not _bulk_limit_reached(task, eligible_characters)
+        )
         message = ""
         if assigned and limit_reached:
             can_submit = False
             message = "The completion limit has been reached."
-        elif not assigned:
+        elif assigned and not has_registered_character:
+            can_submit = False
+            message = "Register a character in Alliance Auth before reporting completion."
+        elif bulk_authorized and not has_eligible_characters:
+            message = "No registered characters belonging to task members are available."
+        elif bulk_authorized and not can_bulk_submit:
+            message = "The task's completion limit has been reached."
+        elif not assigned and not can_bulk_submit:
             message = "You can review or manage this task but are not assigned to complete it."
         task_cards.append(
             {
                 "task": task,
                 "can_submit": can_submit,
-                "can_close": _can_manage_task(user, task)
-                or task.created_by_id == user.pk,
+                "can_bulk_submit": can_bulk_submit,
+                "can_close": _can_close_task(user, task),
                 "availability_message": message,
             }
         )
@@ -184,7 +295,8 @@ def dashboard(request):
     )
     if can_view_all:
         team_completions = TaskCompletion.objects.select_related(
-            "task", "task__department_group", "user", "reviewer"
+            "task", "task__department_group", "user", "reviewer",
+            "character", "submitted_by"
         )[:50]
     else:
         visible_departments = _department_groups_with_permission(
@@ -195,7 +307,8 @@ def dashboard(request):
         team_completions = TaskCompletion.objects.filter(
             team_scope
         ).select_related(
-            "task", "task__department_group", "user", "reviewer"
+            "task", "task__department_group", "user", "reviewer",
+            "character", "submitted_by"
         ).distinct()[:50]
 
     can_view_department_reports = can_view_all or can_view_departments.exists()
@@ -264,13 +377,26 @@ def submit_completion(request, task_id):
     if not task.is_active or not _is_assigned(task, request.user):
         raise PermissionDenied
 
-    form = TaskCompletionForm(request.POST or None)
+    character_queryset = _characters_for_user(request.user)
+    form = TaskCompletionForm(
+        request.POST or None,
+        character_queryset=character_queryset,
+    )
+    if not character_queryset.exists():
+        form.add_error(
+            None,
+            "No Alliance Auth-registered characters are linked to your account.",
+        )
     if request.method == "POST" and form.is_valid():
         with transaction.atomic():
             locked_task = Task.objects.select_for_update().get(pk=task.pk)
             if not locked_task.is_active:
                 form.add_error(None, "This task is no longer active.")
-            elif _completion_limit_reached(locked_task, request.user):
+            elif _completion_limit_reached(
+                locked_task,
+                request.user,
+                form.cleaned_data["character"],
+            ):
                 form.add_error(None, "The completion limit for this task was reached.")
             elif _task_has_open_one_time_completion(locked_task):
                 form.add_error(
@@ -281,6 +407,7 @@ def submit_completion(request, task_id):
                 completion = form.save(commit=False)
                 completion.task = locked_task
                 completion.user = request.user
+                completion.submitted_by = request.user
                 completion.status = (
                     TaskCompletion.Status.PENDING
                     if locked_task.requires_approval
@@ -310,19 +437,123 @@ def submit_completion(request, task_id):
 
 @login_required
 @permission_required("completed_tasks.access_task_reports", raise_exception=True)
+def bulk_submit_completions(request, task_id):
+    task = get_object_or_404(Task, pk=task_id)
+    if not _can_bulk_submit(request.user, task):
+        raise PermissionDenied
+    if not task.is_active:
+        raise PermissionDenied
+
+    character_queryset = _eligible_characters(task)
+    form = TaskBulkCompletionForm(
+        request.POST or None,
+        character_queryset=character_queryset,
+    )
+    if not character_queryset.exists():
+        form.add_error(
+            None,
+            "No registered characters belong to members assigned to this task.",
+        )
+    if request.method == "POST" and form.is_valid():
+        selected_characters = list(form.cleaned_data["characters"])
+        with transaction.atomic():
+            locked_task = Task.objects.select_for_update().get(pk=task.pk)
+            if not locked_task.is_active or not _can_bulk_submit(
+                request.user, locked_task
+            ):
+                form.add_error(None, "Bulk reporting is no longer available.")
+            elif locked_task.frequency != Task.Frequency.ONGOING:
+                form.add_error(
+                    None,
+                    "Bulk completion reports require an ongoing task.",
+                )
+            elif set(
+                _eligible_characters(locked_task)
+                .filter(pk__in=[character.pk for character in selected_characters])
+                .values_list("pk", flat=True)
+            ) != {character.pk for character in selected_characters}:
+                form.add_error(
+                    None,
+                    "One or more selected characters are no longer eligible for this task.",
+                )
+            elif locked_task.max_completions is not None and (
+                locked_task.limit_scope == Task.LimitScope.SHARED
+                and _completion_limit_reached(locked_task, request.user)
+            ):
+                form.add_error(None, "The shared completion limit was reached.")
+            elif locked_task.max_completions is not None and (
+                locked_task.limit_scope == Task.LimitScope.SHARED
+                and locked_task.completions.exclude(
+                    status=TaskCompletion.Status.DENIED
+                ).count()
+                + len(selected_characters)
+                > locked_task.max_completions
+            ):
+                form.add_error(
+                    None,
+                    "There are not enough remaining shared completion slots "
+                    "for all selected characters.",
+                )
+            elif locked_task.max_completions is not None and any(
+                _completion_limit_reached(
+                    locked_task,
+                    character.character_ownership.user,
+                    character,
+                )
+                for character in selected_characters
+            ):
+                form.add_error(
+                    None,
+                    "At least one selected character has reached its completion limit.",
+                )
+            else:
+                status = (
+                    TaskCompletion.Status.PENDING
+                    if locked_task.requires_approval
+                    else TaskCompletion.Status.APPROVED
+                )
+                for character in selected_characters:
+                    TaskCompletion.objects.create(
+                        task=locked_task,
+                        user=character.character_ownership.user,
+                        character=character,
+                        submitted_by=request.user,
+                        completed_at=form.cleaned_data["completed_at"],
+                        notes=form.cleaned_data["notes"],
+                        status=status,
+                    )
+                messages.success(
+                    request,
+                    f"Submitted {len(selected_characters)} individual "
+                    "character completion report(s).",
+                )
+                return redirect("completed_tasks:dashboard")
+    return render(
+        request,
+        "completed_tasks/bulk_submit_completions.html",
+        {"form": form, "task": task},
+    )
+
+
+@login_required
+@permission_required("completed_tasks.access_task_reports", raise_exception=True)
 def close_task(request, task_id):
     if request.method != "POST":
         raise Http404
-    task = get_object_or_404(Task, pk=task_id)
-    if not (
-        task.created_by_id == request.user.pk
-        or _can_manage_task(request.user, task)
-    ):
-        raise PermissionDenied
-    if task.is_active:
-        task.is_active = False
-        task.save(update_fields=("is_active",))
-        messages.success(request, "Task closed. Existing reports remain available.")
+    with transaction.atomic():
+        task = get_object_or_404(
+            Task.objects.select_for_update(),
+            pk=task_id,
+        )
+        if not _can_close_task(request.user, task):
+            raise PermissionDenied
+        if task.is_active:
+            task.is_active = False
+            task.save(update_fields=("is_active",))
+            messages.success(
+                request,
+                "Task closed. Existing reports remain available.",
+            )
     return redirect("completed_tasks:dashboard")
 
 
@@ -330,7 +561,7 @@ def close_task(request, task_id):
 @permission_required("completed_tasks.access_task_reports", raise_exception=True)
 def revise_completion(request, completion_id):
     completion = get_object_or_404(
-        TaskCompletion.objects.select_related("task"), pk=completion_id
+        TaskCompletion.objects.select_related("task", "character"), pk=completion_id
     )
     if completion.user_id != request.user.pk:
         raise PermissionDenied
@@ -339,7 +570,10 @@ def revise_completion(request, completion_id):
     form = TaskCompletionForm(
         request.POST or None,
         instance=completion,
+        character_queryset=_characters_for_user(request.user),
     )
+    if completion.character_id:
+        form.fields.pop("character")
     if request.method == "POST" and form.is_valid():
         completion = form.save(commit=False)
         completion.status = TaskCompletion.Status.PENDING
@@ -360,11 +594,13 @@ def revise_completion(request, completion_id):
 @permission_required("completed_tasks.access_task_reports", raise_exception=True)
 def review_completion(request, completion_id):
     completion = get_object_or_404(
-        TaskCompletion.objects.select_related("task", "user"),
+        TaskCompletion.objects.select_related(
+            "task", "user", "submitted_by", "character"
+        ),
         pk=completion_id,
     )
     if (
-        completion.user_id == request.user.pk
+        request.user.pk in (completion.user_id, completion.submitted_by_id)
         or not _can_approve(completion.task, request.user)
     ):
         raise PermissionDenied
@@ -431,7 +667,8 @@ def all_completions(request):
         else visible_departments.order_by("name")
     )
     completions = TaskCompletion.objects.select_related(
-        "task", "task__department_group", "user", "reviewer"
+        "task", "task__department_group", "user", "reviewer",
+        "character", "submitted_by"
     )
     if not can_view_all:
         completions = completions.filter(task__department_group__in=visible_departments)
@@ -455,6 +692,7 @@ def all_completions(request):
         completions = completions.filter(
             Q(task__title__icontains=search)
             | Q(user__username__icontains=search)
+            | Q(character__character_name__icontains=search)
             | Q(notes__icontains=search)
         )
     can_export_all = user.has_perm("completed_tasks.export_all_completions")
@@ -496,7 +734,8 @@ def export_completions(request):
         raise PermissionDenied
 
     completions = TaskCompletion.objects.select_related(
-        "task", "task__department_group", "user", "reviewer"
+        "task", "task__department_group", "user", "reviewer",
+        "character", "submitted_by"
     )
     if not can_export_all:
         completions = completions.filter(
@@ -525,6 +764,7 @@ def export_completions(request):
         completions = completions.filter(
             Q(task__title__icontains=search)
             | Q(user__username__icontains=search)
+            | Q(character__character_name__icontains=search)
             | Q(notes__icontains=search)
         )
 
@@ -537,6 +777,7 @@ def export_completions(request):
             "Department",
             "Task",
             "Pilot",
+            "Submitted by",
             "Completed at",
             "Status",
             "Notes",
@@ -552,7 +793,14 @@ def export_completions(request):
                 if completion.task.department_group
                 else "",
                 _csv_cell(completion.task.title),
-                _csv_cell(completion.user.get_username()),
+                _csv_cell(
+                    completion.character.character_name
+                    if completion.character
+                    else completion.user.get_username()
+                ),
+                _csv_cell(completion.submitted_by.get_username())
+                if completion.submitted_by
+                else "",
                 completion.completed_at.isoformat(),
                 completion.get_status_display(),
                 _csv_cell(completion.notes),

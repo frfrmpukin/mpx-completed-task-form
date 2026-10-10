@@ -1,0 +1,39 @@
+{% extends "allianceauth/base-bs5.html" %}
+
+{% block page_title %}Report for multiple pilots{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row"><div class="col-12 col-xl-8">
+        <h1 class="h2 mb-2">Report for multiple pilots</h1>
+        <p class="text-body-secondary mb-3">
+            Each selected registered character receives a separate completion
+            record. The Alliance Auth account submitting this batch is recorded
+            for auditing.
+        </p>
+        <div class="card mb-4"><div class="card-body">
+            <h2 class="h5 card-title">{{ task.title }}</h2>
+            <p class="mb-0">{{ task.instructions|linebreaksbr }}</p>
+            <p class="small text-body-secondary mt-3 mb-0">
+                {% if task.requires_approval %}
+                Every character's report will wait for review by an authorized
+                approver.
+                {% else %}
+                Every character's report will be recorded as approved immediately.
+                {% endif %}
+                The completion date and notes are copied to each report. Users
+                with bulk-submission permission can close this task from the
+                dashboard when no more reports should be added.
+            </p>
+        </div></div>
+        <div class="card"><div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                {% include "completed_tasks/_form_fields.html" %}
+                <button type="submit" class="btn btn-primary">Submit selected pilots</button>
+                <a class="btn btn-outline-secondary" href="{% url 'completed_tasks:dashboard' %}">Cancel</a>
+            </form>
+        </div></div>
+    </div></div>
+</div>
+{% endblock %}

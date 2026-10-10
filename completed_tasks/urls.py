@@ -10,6 +10,11 @@ urlpatterns = [
     path("tasks/<int:task_id>/close/", views.close_task, name="close_task"),
     path("tasks/<int:task_id>/submit/", views.submit_completion, name="submit"),
     path(
+        "tasks/<int:task_id>/submit-for-pilots/",
+        views.bulk_submit_completions,
+        name="bulk_submit",
+    ),
+    path(
         "completions/<int:completion_id>/revise/",
         views.revise_completion,
         name="revise",

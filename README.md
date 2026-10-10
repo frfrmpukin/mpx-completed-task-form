@@ -20,7 +20,12 @@ the MPX Missed Meeting form.
 - Department-authorized users can create tasks and view/export reports only for
   department groups where they have the matching permission. Global permissions
   can be assigned to administrators for cross-department access.
-- Task creators can close ongoing tasks while preserving completion history.
+- Task creators and authorized bulk submitters can close ongoing tasks while
+  preserving completion history.
+- Authorized department members or administrators can submit one completion
+  batch for multiple registered characters when the task allows it. Each
+  selected character receives an individual record, with the submitting account
+  retained for audit history.
 - Members can view their own completion history. Users with the appropriate
   permission can view all reports.
 - Completion notes provide a short summary; detailed structure data can remain
@@ -47,9 +52,11 @@ their related option is enabled.
 | **Who can report: individuals** | At least one group or individual is required | Selected individuals are also eligible, whether or not they belong to an assigned group. |
 | **Each completion requires approval** | No; unchecked by default | When checked, a submission waits for an assigned approver. When unchecked, it is recorded as approved immediately. |
 | **Approver groups / individuals** | Only when approval is enabled | Members of a selected group and selected individuals can review submissions for this task. At least one approver group or person is required if approval is enabled. |
+| **Allow authorized bulk submissions** | No; ongoing tasks only | When enabled, users with a separate department/global permission can select multiple registered characters eligible for the task. Each character receives a separate completion with the same date and notes; the submitting account is recorded. |
 | **Task type** | Yes; one-time by default | A one-time task closes after its completion is approved, or after submission if approval is off. An ongoing task remains available for repeat reports until closed or its cap is reached. |
 | **Completion limit** | No | Optional lifetime cap for ongoing tasks. Pending, revision-requested, and approved submissions count; permanently denied submissions do not. It does not reset daily or weekly. |
-| **Limit applies to** | No | Only affects the task when a limit is set. Per pilot gives each eligible member their own lifetime cap. Shared applies one total cap across all eligible members. |
+| **Limit applies to** | No | Only affects the task when a limit is set. Per pilot gives each registered character its own lifetime cap. Shared applies one total cap across all eligible characters. |
+| **Pilot / character** | Yes for a report | Completions are attributed to a registered Alliance Auth character. Members must register their characters in Alliance Auth before reporting; the bulk picker only lists characters owned by task-eligible members. Each selected character gets its own completion record. |
 | **Completion date and time** | Yes; defaults to current local time | Records when the member says the work was completed, rather than when the report was submitted. |
 | **Completion notes** | No; up to 2,000 characters | Briefly describes what was done—for example, systems visited. Shown in the member's history and permission-scoped reports. |
 | **Review decision** | Yes for reviewers | Approve accepts the report; request revision returns it to the pilot for resubmission; deny permanently ends that submission. |
@@ -100,6 +107,8 @@ settings:
 | **Can export department completions** (`export_department_completions`) | When granted on a department group, members can export that department's reports as CSV. The department must also grant report-view permission to appear in the reports interface. |
 | **Can approve any task completion** (`approve_task_completions`) | Global permission: approve completions across all departments. |
 | **Can approve department completions** (`approve_department_completions`) | When granted on a department group, members can approve that department's completions. |
+| **Can submit task completions for any eligible pilot** (`submit_bulk_task_completions`) | Global permission: submit completions on behalf of registered characters eligible for tasks that have bulk submissions enabled, and close those tasks when the batch work is finished. |
+| **Can submit task completions for eligible pilots in an authorized department** (`submit_department_task_completions`) | When granted on a department group, members can submit for eligible registered characters on that department's tasks when bulk submissions are enabled, and close those tasks when the batch work is finished. |
 
 Task-specific approver groups and individuals can review only completions for
 the tasks that assign them as approvers. For department-level access, assign

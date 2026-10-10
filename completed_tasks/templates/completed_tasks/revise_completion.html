@@ -7,6 +7,9 @@
     <div class="row"><div class="col-12 col-xl-8">
         <h1 class="h2 mb-2">Revise completion</h1>
         <p class="text-body-secondary">Update your completion details and resubmit them for review.</p>
+        {% if completion.character %}
+        <p class="mb-3">Pilot: <strong>{{ completion.character }}</strong> (the credited character cannot be changed during revision).</p>
+        {% endif %}
         <div class="alert alert-warning" role="status">
             <strong>Reviewer feedback:</strong> {{ completion.review_notes|linebreaksbr }}
         </div>

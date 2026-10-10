@@ -4,7 +4,19 @@ from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
+from allianceauth.eveonline.models import EveCharacter
+
 from .models import Task, TaskCompletion
+
+
+class CharacterChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, obj):
+        return f"{obj.character_name} — {obj.character_ownership.user}"
+
+
+class CharacterMultipleChoiceField(forms.ModelMultipleChoiceField):
+    def label_from_instance(self, obj):
+        return f"{obj.character_name} — {obj.character_ownership.user}"
 
 
 class TaskForm(forms.ModelForm):
@@ -15,6 +27,7 @@ class TaskForm(forms.ModelForm):
         "assigned_groups": ("Optional", "optional"),
         "assigned_users": ("Optional", "optional"),
         "requires_approval": ("Optional", "optional"),
+        "allow_bulk_submissions": ("Optional", "optional"),
         "approver_groups": ("Conditional", "conditional"),
         "approver_users": ("Conditional", "conditional"),
         "frequency": ("Required", "required"),
@@ -31,6 +44,7 @@ class TaskForm(forms.ModelForm):
             "assigned_groups",
             "assigned_users",
             "requires_approval",
+            "allow_bulk_submissions",
             "approver_groups",
             "approver_users",
             "frequency",
@@ -48,6 +62,9 @@ class TaskForm(forms.ModelForm):
             "approver_groups": forms.SelectMultiple(attrs={"class": "form-select"}),
             "approver_users": forms.SelectMultiple(attrs={"class": "form-select"}),
             "requires_approval": forms.CheckboxInput(
+                attrs={"class": "form-check-input"}
+            ),
+            "allow_bulk_submissions": forms.CheckboxInput(
                 attrs={"class": "form-check-input"}
             ),
             "frequency": forms.Select(attrs={"class": "form-select"}),
@@ -80,6 +97,13 @@ class TaskForm(forms.ModelForm):
                 "Optional. If checked, each submission waits for an assigned "
                 "approver. If unchecked, it is recorded as approved immediately."
             ),
+            "allow_bulk_submissions": (
+                "Optional. Allows users with the separate department or global "
+                "bulk-submission permission to report completions for multiple "
+                "registered characters assigned to this task. This requires an "
+                "ongoing task; each selected character receives an individual "
+                "completion record."
+            ),
             "approver_groups": (
                 "Required when approval is enabled. Members of any selected "
                 "group can review this task's pending submissions."
@@ -101,8 +125,8 @@ class TaskForm(forms.ModelForm):
             ),
             "limit_scope": (
                 "Only affects the task when a completion limit is set. Per pilot "
-                "gives each person their own cap; shared applies one total across "
-                "all eligible pilots."
+                "gives each registered character its own cap; shared applies one "
+                "total across all eligible characters."
             ),
         }
 
@@ -146,11 +170,14 @@ class TaskForm(forms.ModelForm):
                 "description": (
                     "Selected groups and individuals are combined: anyone in a "
                     "selected group or any selected individual can submit a "
-                    "completion. At least one group or individual is required."
+                    "completion. At least one group or individual is required. "
+                    "You can also enable permission-controlled bulk reporting "
+                    "for this task."
                 ),
                 "fields": (
                     self["assigned_groups"],
                     self["assigned_users"],
+                    self["allow_bulk_submissions"],
                 ),
             },
             {
@@ -208,6 +235,13 @@ class TaskForm(forms.ModelForm):
                 "max_completions",
                 "Completion limits can only be set for ongoing tasks.",
             )
+        if cleaned_data.get("allow_bulk_submissions") and cleaned_data.get(
+            "frequency"
+        ) != Task.Frequency.ONGOING:
+            self.add_error(
+                "allow_bulk_submissions",
+                "Bulk submissions can only be enabled for ongoing tasks.",
+            )
         if cleaned_data.get("max_completions") is None:
             cleaned_data["limit_scope"] = Task.LimitScope.PER_USER
         return cleaned_data
@@ -215,14 +249,16 @@ class TaskForm(forms.ModelForm):
 
 class TaskCompletionForm(forms.ModelForm):
     REQUIREMENT_LABELS = {
+        "character": ("Required", "required"),
         "completed_at": ("Required", "required"),
         "notes": ("Optional", "optional"),
     }
 
     class Meta:
         model = TaskCompletion
-        fields = ("completed_at", "notes")
+        fields = ("character", "completed_at", "notes")
         widgets = {
+            "character": forms.Select(attrs={"class": "form-select"}),
             "completed_at": forms.DateTimeInput(
                 attrs={"type": "datetime-local", "class": "form-control"},
                 format="%Y-%m-%dT%H:%M",
@@ -230,6 +266,10 @@ class TaskCompletionForm(forms.ModelForm):
             "notes": forms.Textarea(attrs={"rows": 4, "class": "form-control"}),
         }
         help_texts = {
+            "character": (
+                "Required. Select the registered character receiving this "
+                "completion credit."
+            ),
             "completed_at": (
                 "Required. Defaults to the current local date and time; adjust "
                 "it if you are reporting work completed earlier."
@@ -241,8 +281,18 @@ class TaskCompletionForm(forms.ModelForm):
             ),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, character_queryset=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["character"] = CharacterChoiceField(
+            queryset=(
+                character_queryset
+                if character_queryset is not None
+                else EveCharacter.objects.none()
+            ),
+            required=True,
+            widget=forms.Select(attrs={"class": "form-select"}),
+            help_text=self.Meta.help_texts["character"],
+        )
         for name, (label, style) in self.REQUIREMENT_LABELS.items():
             self.fields[name].widget.attrs["data-requirement-label"] = label
             self.fields[name].widget.attrs["data-requirement-style"] = style
@@ -251,6 +301,58 @@ class TaskCompletionForm(forms.ModelForm):
             self.fields["completed_at"].initial = timezone.localtime().strftime(
                 "%Y-%m-%dT%H:%M"
             )
+
+
+class TaskBulkCompletionForm(forms.Form):
+    characters = CharacterMultipleChoiceField(
+        queryset=EveCharacter.objects.none(),
+        required=True,
+        widget=forms.SelectMultiple(attrs={"class": "form-select", "size": 10}),
+        help_text=(
+            "Choose every registered character that participated. The list is "
+            "limited to characters owned by members assigned to this task. "
+            "Use Ctrl-click (Windows/Linux) or Command-click (Mac) to select "
+            "multiple characters."
+        ),
+    )
+    completed_at = forms.DateTimeField(
+        input_formats=["%Y-%m-%dT%H:%M"],
+        widget=forms.DateTimeInput(
+            attrs={"type": "datetime-local", "class": "form-control"},
+            format="%Y-%m-%dT%H:%M",
+        ),
+        help_text=(
+            "Required. Defaults to the current local date and time; adjust it "
+            "if the work was completed earlier."
+        ),
+    )
+    notes = forms.CharField(
+        required=False,
+        max_length=2000,
+        widget=forms.Textarea(attrs={"rows": 4, "class": "form-control"}),
+        help_text=(
+            "Optional, up to 2,000 characters. These notes are copied to each "
+            "selected character's individual completion record."
+        ),
+    )
+
+    REQUIREMENT_LABELS = {
+        "characters": ("Required", "required"),
+        "completed_at": ("Required", "required"),
+        "notes": ("Optional", "optional"),
+    }
+
+    def __init__(self, *args, character_queryset=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if character_queryset is not None:
+            self.fields["characters"].queryset = character_queryset
+        if not self.is_bound:
+            self.fields["completed_at"].initial = timezone.localtime().strftime(
+                "%Y-%m-%dT%H:%M"
+            )
+        for name, (label, style) in self.REQUIREMENT_LABELS.items():
+            self.fields[name].widget.attrs["data-requirement-label"] = label
+            self.fields[name].widget.attrs["data-requirement-style"] = style
 
 
 class TaskReviewForm(forms.Form):

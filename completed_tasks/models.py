@@ -37,6 +37,7 @@ class Task(models.Model):
         settings.AUTH_USER_MODEL, blank=True, related_name="approvable_task_reports"
     )
     requires_approval = models.BooleanField(default=False)
+    allow_bulk_submissions = models.BooleanField(default=False)
     frequency = models.CharField(
         max_length=12, choices=Frequency.choices, default=Frequency.ONE_TIME
     )
@@ -83,6 +84,14 @@ class Task(models.Model):
                 "export_department_completions",
                 "Can export completions for an authorized department",
             ),
+            (
+                "submit_bulk_task_completions",
+                "Can submit task completions for any eligible pilot",
+            ),
+            (
+                "submit_department_task_completions",
+                "Can submit task completions for eligible pilots in an authorized department",
+            ),
         ]
 
     def __str__(self):
@@ -103,6 +112,20 @@ class TaskCompletion(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="task_completions",
+    )
+    character = models.ForeignKey(
+        "eveonline.EveCharacter",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="completed_task_reports",
+    )
+    submitted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="submitted_task_completions",
     )
     completed_at = models.DateTimeField(default=timezone.now)
     notes = models.TextField(blank=True, max_length=2000)
@@ -142,4 +165,7 @@ class TaskCompletion(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.task}: {self.user} ({self.get_status_display()})"
+        return (
+            f"{self.task}: {self.character or self.user} "
+            f"({self.get_status_display()})"
+        )

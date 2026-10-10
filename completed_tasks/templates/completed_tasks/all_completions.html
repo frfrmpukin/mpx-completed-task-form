@@ -44,13 +44,14 @@
     {% if completions %}
     <div class="table-responsive">
         <table class="table table-striped table-hover align-middle">
-            <thead><tr><th scope="col">Department</th><th scope="col">Task</th><th scope="col">Pilot</th><th scope="col">Completed</th><th scope="col">Status</th><th scope="col">Notes</th><th scope="col">Reviewer</th><th scope="col">Review feedback</th></tr></thead>
+            <thead><tr><th scope="col">Department</th><th scope="col">Task</th><th scope="col">Pilot</th><th scope="col">Submitted by</th><th scope="col">Completed</th><th scope="col">Status</th><th scope="col">Notes</th><th scope="col">Reviewer</th><th scope="col">Review feedback</th></tr></thead>
             <tbody>
                 {% for completion in completions %}
                 <tr>
                     <td>{{ completion.task.department_group.name|default:"Unassigned" }}</td>
                     <td>{{ completion.task.title }}</td>
-                    <td>{{ completion.user }}</td>
+                    <td>{{ completion.character|default:completion.user }}</td>
+                    <td>{{ completion.submitted_by|default:"—" }}</td>
                     <td class="text-nowrap">{{ completion.completed_at|date:"M j, Y H:i" }}</td>
                     <td>{{ completion.get_status_display }}</td>
                     <td>{{ completion.notes|linebreaksbr|default:"—" }}</td>

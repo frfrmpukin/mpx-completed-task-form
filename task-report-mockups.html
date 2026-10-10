@@ -182,7 +182,7 @@ textarea { min-height: 92px; resize: vertical; }
                                 <p>Scan the assigned system and submit the systems visited in your notes.</p>
                                 <span class="badge yellow">Approval required</span>
                                 <span class="badge">Limit: 3 per pilot</span>
-                                <div style="margin-top:14px"><button class="btn sm" data-go="submit">Report completion</button></div>
+                                <div style="margin-top:14px;display:flex;gap:7px;flex-wrap:wrap"><button class="btn sm" data-go="submit">Report completion</button><button class="btn sm outline" data-go="bulk-submit">Report for pilots</button></div>
                             </div>
                         </article>
                         <article class="card task-card" style="margin:0">
@@ -243,6 +243,7 @@ textarea { min-height: 92px; resize: vertical; }
                     <div class="form-section-body">
                         <div class="field"><label>Assigned groups <span class="badge requirement-optional">Optional</span></label><select multiple size="3"><option selected>Exploration Pilots</option><option>Scouting Group</option><option>Specific individuals…</option></select><div class="help">Group and individual assignments are combined.</div></div>
                         <div class="field"><label>Assigned individuals <span class="badge requirement-optional">Optional</span></label><select multiple size="3"><option>Pilot One</option><option>Pilot Two</option></select></div>
+                        <div class="field check"><input type="checkbox" checked><label>Allow authorized bulk submissions <span class="badge requirement-optional">Optional</span><div class="help">An authorized department member can select multiple registered characters and submit one individual completion for each. Ongoing tasks only.</div></label></div>
                     </div>
                 </section>
                 <section class="form-section">
@@ -279,6 +280,22 @@ textarea { min-height: 92px; resize: vertical; }
                 <div class="field"><label>Notes <span class="badge requirement-optional">Optional</span></label><textarea placeholder="Which systems did you scan? Include a brief summary of what you completed."></textarea><div class="help">Optional. Detailed structure data is handled by the existing module.</div></div>
                 <div class="notice">This task requires approval. Your report will appear as pending until it is reviewed.</div>
                 <div class="actions"><button class="btn">Submit completion</button><button class="btn outline" data-go="dashboard">Cancel</button></div>
+            </div></div>
+        </section>
+
+        <section id="bulk-submit" class="screen">
+            <h1>Report for multiple pilots</h1>
+            <p class="subtle">Each selected registered character receives an individual completion record. The account submitting this batch is retained for audit history.</p>
+            <div class="card form"><div class="card-body">
+                <div class="card" style="background:#f8f9fa"><div class="card-body">
+                    <div class="task-top"><h3>Scan structures in a system</h3><span class="spacer"></span><span class="badge yellow">Approval required</span></div>
+                    <p class="muted" style="margin:10px 0 0">Scan the requested structures. In your report, list the systems you visited. Structure details remain in the existing scanning module.</p>
+                </div></div>
+                <div class="field"><label>Registered characters <span class="badge requirement-required">Required</span></label><select multiple size="7"><option selected>Aster Neri — Rin Alar</option><option selected>Vela Neri — Rin Alar</option><option>Juno Vale — Juno Vale</option><option>Sol Neri — Sol Neri</option><option>Orin Dalen — Orin Dalen</option></select><div class="help">Only characters owned by members assigned to this task appear. Choose each character who participated. Use Ctrl-click on Windows/Linux or Command-click on Mac to select multiple.</div></div>
+                <div class="field"><label>Completion date and time <span class="badge requirement-required">Required</span></label><input type="datetime-local" value="2026-10-10T14:30"></div>
+                <div class="field"><label>Notes copied to each report <span class="badge requirement-optional">Optional</span></label><textarea placeholder="Systems visited, operation details, or shared context"></textarea></div>
+                <div class="notice">This task requires approval. Each selected character gets a separate pending report; the same date and notes are copied to each. Users with bulk-submission permission can close the task from the dashboard when no more reports should be submitted.</div>
+                <div class="actions"><button class="btn">Submit 2 pilot reports</button><button class="btn outline" data-go="dashboard">Cancel</button></div>
             </div></div>
         </section>
 

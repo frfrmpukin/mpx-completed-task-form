@@ -34,7 +34,7 @@
                                 {% for completion in pending_reviews %}
                                 <tr>
                                     <td>{{ completion.task.title }}</td>
-                                    <td>{{ completion.user }}</td>
+                                    <td>{{ completion.character|default:completion.user }}</td>
                                     <td class="text-nowrap">{{ completion.completed_at|date:"M j, Y H:i" }}</td>
                                     <td><a class="btn btn-sm btn-outline-primary" href="{% url 'completed_tasks:review' completion.pk %}">Review</a></td>
                                 </tr>
@@ -70,7 +70,11 @@
                                 {% endif %}
                                 {% if task_card.can_submit %}
                                 <a class="btn btn-sm btn-primary" href="{% url 'completed_tasks:submit' task.pk %}">Report completion</a>
-                                {% elif task_card.availability_message %}
+                                {% endif %}
+                                {% if task_card.can_bulk_submit %}
+                                <a class="btn btn-sm btn-outline-primary" href="{% url 'completed_tasks:bulk_submit' task.pk %}">Report for pilots</a>
+                                {% endif %}
+                                {% if not task_card.can_submit and not task_card.can_bulk_submit and task_card.availability_message %}
                                 <p class="small text-body-secondary mb-0">{{ task_card.availability_message }}</p>
                                 {% endif %}
                                 {% if task_card.can_close %}
@@ -101,7 +105,12 @@
                             <tr>
                                 <td>{{ completion.task.department_group.name|default:"Unassigned" }}</td>
                                 <td>{{ completion.task.title }}</td>
-                                <td>{{ completion.user }}</td>
+                                <td>
+                                    {{ completion.character|default:completion.user }}
+                                    {% if completion.submitted_by and completion.submitted_by_id != completion.user_id %}
+                                    <div class="small text-body-secondary">Submitted by {{ completion.submitted_by }}</div>
+                                    {% endif %}
+                                </td>
                                 <td class="text-nowrap">{{ completion.completed_at|date:"M j, Y H:i" }}</td>
                                 <td>{{ completion.get_status_display }}</td>
                                 <td>{{ completion.notes|linebreaksbr|default:"—" }}</td>
@@ -119,11 +128,13 @@
                 {% if own_completions %}
                 <div class="table-responsive">
                     <table class="table table-striped table-hover align-middle">
-                        <thead><tr><th scope="col">Task</th><th scope="col">Completed</th><th scope="col">Status</th><th scope="col">Notes</th><th scope="col">Review</th></tr></thead>
+                        <thead><tr><th scope="col">Task</th><th scope="col">Pilot</th><th scope="col">Submitted by</th><th scope="col">Completed</th><th scope="col">Status</th><th scope="col">Notes</th><th scope="col">Review</th></tr></thead>
                         <tbody>
                             {% for completion in own_completions %}
                             <tr>
                                 <td>{{ completion.task.title }}</td>
+                                <td>{{ completion.character|default:completion.user }}</td>
+                                <td>{% if completion.submitted_by and completion.submitted_by_id != completion.user_id %}{{ completion.submitted_by }}{% else %}—{% endif %}</td>
                                 <td class="text-nowrap">{{ completion.completed_at|date:"M j, Y H:i" }}</td>
                                 <td>{{ completion.get_status_display }}</td>
                                 <td>{{ completion.notes|linebreaksbr|default:"—" }}</td>
