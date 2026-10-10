@@ -1,0 +1,68 @@
+{% extends "allianceauth/base-bs5.html" %}
+
+{% block page_title %}Task completion reports{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <h1 class="h2 mb-0 me-auto">Task completion reports</h1>
+        {% if can_export %}
+        <a class="btn btn-outline-primary" href="{{ export_url }}">Export CSV</a>
+        {% endif %}
+    </div>
+    <form method="get" class="card mb-3">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-12 col-md-4">
+                    <label for="department-filter" class="form-label">Department</label>
+                    <select id="department-filter" name="department" class="form-select">
+                        <option value="">All permitted departments</option>
+                        {% for department in departments %}
+                        <option value="{{ department.pk }}"{% if selected_department == department.pk|stringformat:"s" %} selected{% endif %}>{{ department.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-md-3">
+                    <label for="status-filter" class="form-label">Status</label>
+                    <select id="status-filter" name="status" class="form-select">
+                        <option value="">All statuses</option>
+                        {% for value, label in status_choices %}
+                        <option value="{{ value }}"{% if selected_status == value %} selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-md-3">
+                    <label for="search-filter" class="form-label">Search</label>
+                    <input id="search-filter" type="search" name="q" value="{{ search }}" class="form-control" placeholder="Pilot, task, or notes">
+                </div>
+                <div class="col-12 col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Filter</button>
+                </div>
+            </div>
+        </div>
+    </form>
+    {% if completions %}
+    <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle">
+            <thead><tr><th scope="col">Department</th><th scope="col">Task</th><th scope="col">Pilot</th><th scope="col">Completed</th><th scope="col">Status</th><th scope="col">Notes</th><th scope="col">Reviewer</th><th scope="col">Review feedback</th></tr></thead>
+            <tbody>
+                {% for completion in completions %}
+                <tr>
+                    <td>{{ completion.task.department_group.name|default:"Unassigned" }}</td>
+                    <td>{{ completion.task.title }}</td>
+                    <td>{{ completion.user }}</td>
+                    <td class="text-nowrap">{{ completion.completed_at|date:"M j, Y H:i" }}</td>
+                    <td>{{ completion.get_status_display }}</td>
+                    <td>{{ completion.notes|linebreaksbr|default:"—" }}</td>
+                    <td>{{ completion.reviewer|default:"—" }}</td>
+                    <td>{{ completion.review_notes|linebreaksbr|default:"—" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-secondary" role="status">No task completions match these filters.</div>
+    {% endif %}
+</div>
+{% endblock %}

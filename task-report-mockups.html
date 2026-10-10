@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Task Reports — Page Mockups</title>
+<style>
+:root {
+    color-scheme: light;
+    --ink: #212529;
+    --muted: #6c757d;
+    --line: #dee2e6;
+    --blue: #0d6efd;
+    --navy: #182433;
+    --page: #f6f7f9;
+}
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    color: var(--ink);
+    background: var(--page);
+    font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+button, input, select, textarea { font: inherit; }
+.topbar {
+    height: 58px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 0 24px;
+    color: white;
+    background: var(--navy);
+}
+.brand { font-size: 16px; font-weight: 650; letter-spacing: .2px; }
+.topbar .section { color: #c6cfda; }
+.topbar .user { margin-left: auto; color: #d5dce5; }
+.layout { min-height: calc(100vh - 58px); display: grid; grid-template-columns: 220px minmax(0, 1fr); }
+aside { padding: 22px 12px; background: #fff; border-right: 1px solid var(--line); }
+.nav-label { padding: 8px 12px; color: #858e98; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.nav-item {
+    width: 100%;
+    padding: 10px 12px;
+    display: flex;
+    gap: 11px;
+    align-items: center;
+    color: #384454;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+}
+.nav-item:hover { background: #f1f4f8; }
+.nav-item.active { color: #084298; background: #e8f1ff; font-weight: 650; }
+.nav-icon { width: 18px; text-align: center; }
+main { max-width: 1250px; width: 100%; margin: 0 auto; padding: 30px 34px 50px; }
+.toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 5px; }
+h1 { margin: 0; font-size: 25px; line-height: 1.3; font-weight: 620; }
+h2 { margin: 0 0 15px; font-size: 18px; font-weight: 620; }
+h3 { margin: 0; font-size: 16px; font-weight: 620; }
+.spacer { flex: 1; }
+.subtle { margin: 5px 0 23px; color: var(--muted); }
+.screen { display: none; }
+.screen.active { display: block; }
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 35px;
+    padding: 7px 12px;
+    color: #fff;
+    border: 1px solid var(--blue);
+    border-radius: 5px;
+    background: var(--blue);
+    text-decoration: none;
+    cursor: pointer;
+}
+.btn.sm { min-height: 30px; padding: 4px 9px; font-size: 12px; }
+.btn.outline { color: #435266; border-color: #cbd2da; background: #fff; }
+.btn.danger { color: #bb2d3b; border-color: #e3a7ad; background: white; }
+.card { margin-bottom: 22px; border: 1px solid var(--line); border-radius: 7px; background: white; box-shadow: 0 1px 2px #15283a0b; }
+.card-body { padding: 19px 20px; }
+.card-head { display: flex; align-items: center; gap: 9px; margin-bottom: 15px; }
+.grid { display: grid; gap: 15px; }
+.grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.stat { padding: 15px 17px; border: 1px solid var(--line); border-radius: 7px; background: white; }
+.stat .label { color: var(--muted); font-size: 12px; }
+.stat .value { margin-top: 3px; font-size: 23px; font-weight: 650; }
+.task-title { font-weight: 640; }
+.task-card p { margin: 12px 0 16px; color: #545e69; }
+.badge { display: inline-block; padding: 4px 8px; border-radius: 20px; background: #e9ecef; color: #495057; font-size: 11px; white-space: nowrap; }
+.badge.blue { color: #084298; background: #cfe2ff; }
+.badge.yellow { color: #664d03; background: #fff3cd; }
+.badge.green { color: #0f5132; background: #d1e7dd; }
+.badge.red { color: #842029; background: #f8d7da; }
+.badge.gray { color: #495057; background: #e9ecef; }
+.task-top { display: flex; align-items: start; gap: 7px; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 11px 12px; border-bottom: 1px solid #e9ecef; text-align: left; vertical-align: middle; }
+th { color: #566170; background: #f8f9fa; font-size: 12px; font-weight: 650; }
+tr:last-child td { border-bottom: 0; }
+.muted { color: var(--muted); }
+.notice { margin-bottom: 18px; padding: 12px 14px; border: 1px solid #b6d4fe; border-radius: 6px; color: #084298; background: #cfe2ff55; }
+.notice.warning { color: #664d03; border-color: #ffecb5; background: #fff3cd; }
+.form { max-width: 760px; }
+.field { margin-bottom: 17px; }
+label { display: block; margin-bottom: 6px; font-weight: 600; }
+.help { margin-top: 4px; color: var(--muted); font-size: 12px; }
+input[type="text"], input[type="datetime-local"], input[type="number"], select, textarea {
+    width: 100%;
+    min-height: 38px;
+    padding: 8px 10px;
+    color: var(--ink);
+    border: 1px solid #ced4da;
+    border-radius: 5px;
+    background: white;
+}
+textarea { min-height: 92px; resize: vertical; }
+.check { display: flex; align-items: start; gap: 9px; }
+.check input { margin-top: 4px; accent-color: var(--blue); }
+.check label { margin: 0; font-weight: 500; }
+.radios { display: grid; gap: 8px; }
+.radios .check { padding: 9px 11px; border: 1px solid var(--line); border-radius: 5px; }
+.actions { display: flex; gap: 8px; margin-top: 8px; }
+.footer-note { margin-top: 10px; color: var(--muted); font-size: 12px; }
+@media (max-width: 760px) {
+    .layout { grid-template-columns: 1fr; }
+    aside { display: flex; gap: 5px; padding: 8px; border-right: 0; border-bottom: 1px solid var(--line); overflow-x: auto; }
+    .nav-label { display: none; }
+    .nav-item { width: auto; min-width: max-content; }
+    main { padding: 22px 16px 38px; }
+    .grid.two, .grid.three { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+    <div class="brand">Alliance Auth</div>
+    <div class="section">/</div>
+    <div class="section">Task Reports</div>
+    <div class="user">Signed in as Pilot</div>
+</header>
+<div class="layout">
+    <aside aria-label="Mockup page navigation">
+        <div class="nav-label">Task Reports</div>
+        <button class="nav-item active" data-screen="dashboard"><span class="nav-icon">▦</span> My dashboard</button>
+        <button class="nav-item" data-screen="create"><span class="nav-icon">＋</span> Create task</button>
+        <button class="nav-item" data-screen="submit"><span class="nav-icon">✓</span> Report completion</button>
+        <button class="nav-item" data-screen="review"><span class="nav-icon">◷</span> Review completion</button>
+        <button class="nav-item" data-screen="reports"><span class="nav-icon">▤</span> All reports</button>
+    </aside>
+    <main>
+        <section id="dashboard" class="screen active">
+            <div class="toolbar">
+                <h1>Task Reports</h1><span class="spacer"></span>
+                <button class="btn outline" data-go="reports">All completion reports</button>
+                <button class="btn" data-go="create">＋ Create task</button>
+            </div>
+            <p class="subtle">Report completed work and review your submission history.</p>
+            <div class="grid three" style="margin-bottom:22px">
+                <div class="stat"><div class="label">Available tasks</div><div class="value">4</div></div>
+                <div class="stat"><div class="label">Awaiting your review</div><div class="value">2</div></div>
+                <div class="stat"><div class="label">Your approved reports</div><div class="value">12</div></div>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <div class="card-head"><h2 style="margin:0">Available tasks</h2><span class="badge">Assigned to you</span></div>
+                    <div class="grid two">
+                        <article class="card task-card" style="margin:0">
+                            <div class="card-body">
+                                <div class="task-top"><h3 class="task-title">Scan structures in a system</h3><span class="spacer"></span><span class="badge">Ongoing</span></div>
+                                <div class="muted" style="margin-top:7px">Department: Exploration</div>
+                                <p>Scan the assigned system and submit the systems visited in your notes.</p>
+                                <span class="badge yellow">Approval required</span>
+                                <span class="badge">Limit: 3 per pilot</span>
+                                <div style="margin-top:14px"><button class="btn sm" data-go="submit">Report completion</button></div>
+                            </div>
+                        </article>
+                        <article class="card task-card" style="margin:0">
+                            <div class="card-body">
+                                <div class="task-top"><h3 class="task-title">Submit a weekly activity summary</h3><span class="spacer"></span><span class="badge">Ongoing</span></div>
+                                <div class="muted" style="margin-top:7px">Department: Operations</div>
+                                <p>Summarize the work completed during your assigned activity.</p>
+                                <span class="badge green">No approval needed</span>
+                                <div style="margin-top:14px"><button class="btn sm" data-go="submit">Report completion</button></div>
+                            </div>
+                        </article>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <div class="card-head"><h2 style="margin:0">Awaiting your review</h2><span class="badge yellow">2 pending</span></div>
+                    <div class="table-wrap"><table>
+                        <thead><tr><th>Task</th><th>Pilot</th><th>Completed</th><th>Action</th></tr></thead>
+                        <tbody>
+                            <tr><td>Scan structures in a system</td><td>Rin Alar</td><td>Oct 10, 2026</td><td><button class="btn sm outline" data-go="review">Review</button></td></tr>
+                            <tr><td>Submit a weekly activity summary</td><td>Juno Vale</td><td>Oct 9, 2026</td><td><button class="btn sm outline" data-go="review">Review</button></td></tr>
+                        </tbody>
+                    </table></div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <h2>My completion history</h2>
+                    <div class="table-wrap"><table>
+                        <thead><tr><th>Task</th><th>Completed</th><th>Status</th><th>Notes</th><th>Review</th></tr></thead>
+                        <tbody>
+                            <tr><td>Scan structures in a system</td><td>Oct 8, 2026</td><td><span class="badge green">Approved</span></td><td>Scanned systems A and B.</td><td>Approved by Rin Alar</td></tr>
+                            <tr><td>Submit a weekly activity summary</td><td>Oct 6, 2026</td><td><span class="badge yellow">Pending approval</span></td><td>Completed patrol support.</td><td>Waiting for review</td></tr>
+                            <tr><td>Map a new route</td><td>Oct 3, 2026</td><td><span class="badge red">Revision requested</span></td><td>Route recorded.</td><td><button class="btn sm outline" data-go="submit">Revise and resubmit</button></td></tr>
+                        </tbody>
+                    </table></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="create" class="screen">
+            <h1>Create task</h1>
+            <p class="subtle">Define the task, who can report it, and how completions are reviewed.</p>
+            <div class="card form"><div class="card-body">
+                <div class="field"><label>Task name</label><input type="text" value="Scan structures in a system"></div>
+                <div class="field"><label>Instructions</label><textarea>Scan the requested structures. In your report, list the systems you visited. Structure details remain in the existing scanning module.</textarea><div class="help">Shown to members when they report completion.</div></div>
+                <div class="notice">Your department choices are limited to groups where you have task-creation permission. Admins with global permission can create tasks for any department.</div>
+                <div class="field"><label>Department</label><select><option>Select an authorized department</option><option selected>Exploration</option></select></div>
+                <div class="field"><label>Who can report this task?</label><select multiple size="3"><option selected>Exploration Pilots</option><option>Scouting Group</option><option>Specific individuals…</option></select><div class="help">Choose one or more groups; selected individuals can also be assigned.</div></div>
+                <div class="field check"><input type="checkbox" checked><label>Each completion requires approval</label></div>
+                <div class="field"><label>Who can approve completions?</label><select multiple size="2"><option selected>Exploration Leads</option><option>Specific individuals…</option></select></div>
+                <div class="field"><label>Task type</label><select><option>One time — closes after approved completion</option><option selected>Ongoing — remains available for repeat completions</option></select></div>
+                <div class="grid two">
+                    <div class="field"><label>Completion limit (optional)</label><input type="number" value="3" min="1"><div class="help">Lifetime cap; leave blank for no cap.</div></div>
+                    <div class="field"><label>Limit applies to</label><select><option selected>Each pilot individually</option><option>Everyone combined</option></select></div>
+                </div>
+                <div class="actions"><button class="btn">Create task</button><button class="btn outline" data-go="dashboard">Cancel</button></div>
+            </div></div>
+        </section>
+
+        <section id="submit" class="screen">
+            <h1>Report task completion</h1>
+            <p class="subtle">Submit what you completed. The report will be added to your history.</p>
+            <div class="card form"><div class="card-body">
+                <div class="card" style="background:#f8f9fa"><div class="card-body">
+                    <div class="task-top"><h3>Scan structures in a system</h3><span class="spacer"></span><span class="badge yellow">Approval required</span></div>
+                    <p class="muted" style="margin:10px 0 0">Scan the requested structures. In your report, list the systems you visited.</p>
+                </div></div>
+                <div class="field"><label>Completion date and time</label><input type="datetime-local" value="2026-10-10T14:30"></div>
+                <div class="field"><label>Notes</label><textarea placeholder="Which systems did you scan? Include a brief summary of what you completed."></textarea><div class="help">Optional. Detailed structure data is handled by the existing module.</div></div>
+                <div class="notice">This task requires approval. Your report will appear as pending until it is reviewed.</div>
+                <div class="actions"><button class="btn">Submit completion</button><button class="btn outline" data-go="dashboard">Cancel</button></div>
+            </div></div>
+        </section>
+
+        <section id="review" class="screen">
+            <h1>Review task completion</h1>
+            <p class="subtle">Check the report and record a decision for the pilot.</p>
+            <div class="card form"><div class="card-body">
+                <div class="card" style="background:#f8f9fa"><div class="card-body">
+                    <h3 style="margin-bottom:13px">Scan structures in a system</h3>
+                    <div class="grid two">
+                        <div><div class="muted">Pilot</div><strong>Rin Alar</strong></div>
+                        <div><div class="muted">Completed</div><strong>October 10, 2026 at 14:30</strong></div>
+                        <div><div class="muted">Department</div><strong>Exploration</strong></div>
+                        <div><div class="muted">Current status</div><strong><span class="badge yellow">Pending approval</span></strong></div>
+                    </div>
+                    <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+                    <div class="muted">Pilot notes</div><div style="margin-top:4px">Scanned systems Aster, Orin, and Vela. Structure details are recorded in the scanning module.</div>
+                </div></div>
+                <div class="field"><label>Decision</label>
+                    <div class="radios">
+                        <div class="check"><input type="radio" name="decision" checked><label>Approve — completion is accepted and earns credit.</label></div>
+                        <div class="check"><input type="radio" name="decision"><label>Request revision — pilot can update and resubmit.</label></div>
+                        <div class="check"><input type="radio" name="decision"><label>Deny permanently — no resubmission.</label></div>
+                    </div>
+                </div>
+                <div class="field"><label>Feedback for pilot</label><textarea placeholder="Required for a revision request or permanent denial."></textarea></div>
+                <div class="actions"><button class="btn">Save decision</button><button class="btn outline" data-go="dashboard">Cancel</button></div>
+            </div></div>
+        </section>
+
+        <section id="reports" class="screen">
+            <div class="toolbar"><h1>Task completion reports</h1><span class="spacer"></span><button class="btn outline">Export CSV</button><button class="btn outline" data-go="dashboard">Back to dashboard</button></div>
+            <p class="subtle">Department-authorized users see and export their permitted departments. Administrators with global permissions can work across departments.</p>
+            <div class="grid three" style="margin-bottom:20px">
+                <div class="stat"><div class="label">Reports shown</div><div class="value">128</div></div>
+                <div class="stat"><div class="label">Pilots</div><div class="value">34</div></div>
+                <div class="stat"><div class="label">Departments</div><div class="value">5</div></div>
+            </div>
+            <div class="card"><div class="card-body">
+                <div class="grid three" style="margin-bottom:18px">
+                    <div><label>Department</label><select><option>All permitted departments</option><option>Exploration</option><option>Operations</option></select></div>
+                    <div><label>Status</label><select><option>All statuses</option><option>Pending approval</option><option>Approved</option><option>Revision requested</option><option>Denied</option></select></div>
+                    <div><label>Search pilot or task</label><input type="text" placeholder="Type to search…"></div>
+                </div>
+                <div class="table-wrap"><table>
+                    <thead><tr><th>Department</th><th>Task</th><th>Pilot</th><th>Completed</th><th>Status</th><th>Notes</th><th>Reviewer</th></tr></thead>
+                    <tbody>
+                        <tr><td>Exploration</td><td>Scan structures in a system</td><td>Rin Alar</td><td>Oct 10, 2026</td><td><span class="badge green">Approved</span></td><td>Systems Aster and Orin</td><td>Juno Vale</td></tr>
+                        <tr><td>Operations</td><td>Submit a weekly activity summary</td><td>Juno Vale</td><td>Oct 9, 2026</td><td><span class="badge yellow">Pending approval</span></td><td>Patrol and logistics activity.</td><td>—</td></tr>
+                        <tr><td>Exploration</td><td>Map a new route</td><td>Sol Neri</td><td>Oct 8, 2026</td><td><span class="badge red">Revision requested</span></td><td>Route submitted for review.</td><td>Rin Alar</td></tr>
+                        <tr><td>Support</td><td>Assist a fleet operation</td><td>Vale Tori</td><td>Oct 7, 2026</td><td><span class="badge gray">Denied</span></td><td>Submitted outside the operation.</td><td>Juno Vale</td></tr>
+                    </tbody>
+                </table></div>
+                <div class="footer-note">Export CSV follows the selected filters and your authorized department scope. Global export access is controlled separately in Alliance Auth permissions.</div>
+            </div></div>
+        </section>
+    </main>
+</div>
+<script>
+function showScreen(id) {
+    document.querySelectorAll(".screen").forEach(function (screen) {
+        screen.classList.toggle("active", screen.id === id);
+    });
+    document.querySelectorAll(".nav-item").forEach(function (item) {
+        item.classList.toggle("active", item.dataset.screen === id);
+    });
+    window.scrollTo(0, 0);
+}
+document.querySelectorAll("[data-screen]").forEach(function (item) {
+    item.addEventListener("click", function () { showScreen(item.dataset.screen); });
+});
+document.querySelectorAll("[data-go]").forEach(function (item) {
+    item.addEventListener("click", function () { showScreen(item.dataset.go); });
+});
+</script>
+</body>
+</html>

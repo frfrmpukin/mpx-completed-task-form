@@ -1,0 +1,23 @@
+{% extends "allianceauth/base-bs5.html" %}
+
+{% block page_title %}Report task completion{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row"><div class="col-12 col-xl-8">
+        <h1 class="h2 mb-2">Report task completion</h1>
+        <div class="card mb-4"><div class="card-body">
+            <h2 class="h5 card-title">{{ task.title }}</h2>
+            <p class="mb-0">{{ task.instructions|linebreaksbr }}</p>
+        </div></div>
+        <div class="card"><div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                {% include "completed_tasks/_form_fields.html" %}
+                <button type="submit" class="btn btn-primary">Submit completion</button>
+                <a class="btn btn-outline-secondary" href="{% url 'completed_tasks:dashboard' %}">Cancel</a>
+            </form>
+        </div></div>
+    </div></div>
+</div>
+{% endblock %}
