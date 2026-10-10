@@ -28,6 +28,28 @@ the MPX Missed Meeting form.
 
 This app reports task completions; it is not a task manager or PAP system.
 
+## Task and completion fields
+
+| Field | Required? | Purpose and impact |
+|---|---|---|
+| **Task name** | Yes | Short title shown in task lists, history, and reports. |
+| **Instructions** | Yes | Tells members what work to do and what to include in their completion notes. Detailed game or scanning data can remain in its existing module. |
+| **Department** | Yes | Selects the owning Alliance Auth group. Department permissions scope task creation, approvals, reporting, and exports. Choices are limited to departments the creator is allowed to manage; global task creators can choose any group. |
+| **Who can report: groups** | At least one group or individual is required | Every member of a selected group is eligible to submit the task. |
+| **Who can report: individuals** | At least one group or individual is required | Selected individuals are also eligible, whether or not they belong to an assigned group. |
+| **Each completion requires approval** | No; unchecked by default | When checked, a submission waits for an assigned approver. When unchecked, it is recorded as approved immediately. |
+| **Approver groups / individuals** | Only when approval is enabled | Members of a selected group and selected individuals can review submissions for this task. At least one approver group or person is required if approval is enabled. |
+| **Task type** | Yes; one-time by default | A one-time task closes after its completion is approved, or after submission if approval is off. An ongoing task remains available for repeat reports until closed or its cap is reached. |
+| **Completion limit** | No | Optional lifetime cap for ongoing tasks. Pending, revision-requested, and approved submissions count; permanently denied submissions do not. It does not reset daily or weekly. |
+| **Limit applies to** | No | Only affects the task when a limit is set. Per pilot gives each eligible member their own lifetime cap. Shared applies one total cap across all eligible members. |
+| **Completion date and time** | Yes; defaults to current local time | Records when the member says the work was completed, rather than when the report was submitted. |
+| **Completion notes** | No; up to 2,000 characters | Briefly describes what was done—for example, systems visited. Shown in the member's history and permission-scoped reports. |
+| **Review decision** | Yes for reviewers | Approve accepts the report; request revision returns it to the pilot for resubmission; deny permanently ends that submission. |
+| **Review feedback** | Required for revision or denial; optional for approval | Explains the decision to the pilot and remains with the completion history. |
+
+Task submissions record reporting and review status; this app does not award
+PAP points or integrate with a PAP system.
+
 ## Installation
 
 Install the package in the Alliance Auth virtual environment:

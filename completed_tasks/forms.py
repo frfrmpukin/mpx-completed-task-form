@@ -43,15 +43,52 @@ class TaskForm(forms.ModelForm):
             "limit_scope": forms.Select(attrs={"class": "form-select"}),
         }
         help_texts = {
-            "assigned_groups": "Members of any selected group can report this task.",
-            "assigned_users": "Individuals selected here can also report this task.",
-            "approver_groups": "Required when approval is enabled.",
-            "approver_users": "Required when approval is enabled.",
+            "title": "Required. Short name shown in the task list, completion history, and reports.",
+            "instructions": (
+                "Required. Explain what members need to do and what to include "
+                "in their completion notes. Detailed data can remain in the "
+                "existing game or scanning module."
+            ),
+            "department_group": (
+                "Required. Sets the department that owns this task and controls "
+                "department-scoped task management, approvals, reports, and exports."
+            ),
+            "assigned_groups": (
+                "Optional if you select individuals below; otherwise select at "
+                "least one group. Members of any selected group can report this task."
+            ),
+            "assigned_users": (
+                "Optional if you select a group above; otherwise select at least "
+                "one individual. Selected people can report this task in addition "
+                "to members of the selected groups."
+            ),
+            "requires_approval": (
+                "Optional. If checked, each submission waits for an assigned "
+                "approver. If unchecked, it is recorded as approved immediately."
+            ),
+            "approver_groups": (
+                "Required when approval is enabled. Members of any selected "
+                "group can review this task's pending submissions."
+            ),
+            "approver_users": (
+                "Required when approval is enabled. Selected people can review "
+                "this task's pending submissions in addition to approver groups."
+            ),
+            "frequency": (
+                "Required. One-time tasks close after an accepted completion "
+                "(or after submission if approval is off). Ongoing tasks stay "
+                "available for multiple completion reports."
+            ),
             "max_completions": (
-                "Optional lifetime cap. Leave blank for no completion limit."
+                "Optional; ongoing tasks only. Sets a lifetime total, not a "
+                "daily or weekly limit. Pending, revision-requested, and "
+                "approved submissions count; permanently denied submissions do "
+                "not. Leave blank for no cap."
             ),
             "limit_scope": (
-                "Choose whether the cap applies to each pilot or the task overall."
+                "Only affects the task when a completion limit is set. Per pilot "
+                "gives each person their own cap; shared applies one total across "
+                "all eligible pilots."
             ),
         }
 
@@ -115,7 +152,15 @@ class TaskCompletionForm(forms.ModelForm):
             "notes": forms.Textarea(attrs={"rows": 4, "class": "form-control"}),
         }
         help_texts = {
-            "notes": "Optional. Add a brief summary of what you completed.",
+            "completed_at": (
+                "Required. Defaults to the current local date and time; adjust "
+                "it if you are reporting work completed earlier."
+            ),
+            "notes": (
+                "Optional, up to 2,000 characters. Summarize what you completed "
+                "and include useful details such as the systems visited. This "
+                "appears in your history and authorized reports."
+            ),
         }
 
     def __init__(self, *args, **kwargs):
@@ -134,12 +179,23 @@ class TaskReviewForm(forms.Form):
         ("deny", "Deny permanently"),
     )
     action = forms.ChoiceField(
-        choices=ACTIONS, widget=forms.RadioSelect, initial="approve"
+        choices=ACTIONS,
+        widget=forms.RadioSelect,
+        initial="approve",
+        help_text=(
+            "Approve accepts the completion in the task report. Request "
+            "revision returns it to the pilot for an update and resubmission. "
+            "Deny permanently closes this submission without resubmission."
+        ),
     )
     review_notes = forms.CharField(
         required=False,
         max_length=2000,
         widget=forms.Textarea(attrs={"rows": 4, "class": "form-control"}),
+        help_text=(
+            "Required for a revision request or permanent denial; optional for "
+            "approval. The pilot can see this feedback."
+        ),
     )
 
     def clean(self):

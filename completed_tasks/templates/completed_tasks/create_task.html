@@ -6,7 +6,11 @@
 <div class="container-fluid mt-4">
     <div class="row"><div class="col-12 col-xl-8">
         <h1 class="h2 mb-2">Create task</h1>
-        <p class="text-body-secondary mb-4">Define the task, who can report it, and how completions are reviewed.</p>
+        <p class="text-body-secondary mb-4">
+            Define the work members should report and what happens after they submit it.
+            Fields are marked by their help text; at least one eligible group or individual
+            is required, and approvers are required only when approval is enabled.
+        </p>
         <div class="card"><div class="card-body">
             <form method="post">
                 {% csrf_token %}

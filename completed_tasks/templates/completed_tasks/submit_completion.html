@@ -9,6 +9,15 @@
         <div class="card mb-4"><div class="card-body">
             <h2 class="h5 card-title">{{ task.title }}</h2>
             <p class="mb-0">{{ task.instructions|linebreaksbr }}</p>
+            <p class="small text-body-secondary mt-3 mb-0">
+                {% if task.requires_approval %}
+                This report will wait for review by an authorized approver. The decision
+                and any feedback will remain in your completion history.
+                {% else %}
+                This report will be recorded as approved immediately. The task's completion
+                limit and one-time or ongoing setting determine whether it remains available.
+                {% endif %}
+            </p>
         </div></div>
         <div class="card"><div class="card-body">
             <form method="post">
