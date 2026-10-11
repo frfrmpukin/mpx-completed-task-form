@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
 from django.test import RequestFactory, TestCase
+from django.urls import reverse
 
 from completed_tasks.forms import (
     TaskBulkCompletionForm,
@@ -101,6 +102,64 @@ class DepartmentPermissionsTests(TestCase):
 
         self.assertFalse(form.is_valid())
         self.assertIn("allow_bulk_submissions", form.errors)
+
+    def test_task_workflow_settings_are_locked_after_reports(self):
+        form = TaskForm(
+            instance=self.task,
+            department_queryset=Group.objects.all(),
+            workflow_locked=True,
+        )
+
+        self.assertFalse(form.fields["title"].disabled)
+        self.assertFalse(form.fields["instructions"].disabled)
+        for field_name in TaskForm.WORKFLOW_FIELDS:
+            with self.subTest(field=field_name):
+                self.assertTrue(form.fields[field_name].disabled)
+
+    def test_task_creator_can_edit_task(self):
+        self.task.created_by = self.user
+        self.task.save(update_fields=("created_by",))
+        self.client.force_login(self.user)
+
+        response = self.client.get(
+            reverse("completed_tasks:edit_task", args=(self.task.pk,))
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context["is_editing"])
+        self.assertFalse(response.context["workflow_locked"])
+
+    def test_editing_after_a_completion_keeps_workflow_settings_unchanged(self):
+        self.task.created_by = self.user
+        self.task.frequency = Task.Frequency.ONGOING
+        self.task.assigned_groups.add(self.department)
+        self.task.save(update_fields=("created_by", "frequency"))
+        TaskCompletion.objects.create(task=self.task, user=self.user)
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("completed_tasks:edit_task", args=(self.task.pk,)),
+            {
+                "title": "Updated title",
+                "instructions": "Updated instructions",
+                "department_group": str(self.other_department.pk),
+                "assigned_groups": [str(self.other_department.pk)],
+                "frequency": Task.Frequency.ONE_TIME,
+                "limit_scope": Task.LimitScope.SHARED,
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.task.refresh_from_db()
+        self.assertEqual(self.task.title, "Updated title")
+        self.assertEqual(self.task.instructions, "Updated instructions")
+        self.assertEqual(self.task.department_group, self.department)
+        self.assertEqual(self.task.frequency, Task.Frequency.ONGOING)
+        self.assertQuerySetEqual(
+            self.task.assigned_groups.all(),
+            [self.department],
+        )
+        self.assertEqual(self.task.updated_by, self.user)
 
     def test_forms_mark_required_optional_and_conditional_fields(self):
         form = TaskForm(department_queryset=Group.objects.all())

@@ -22,6 +22,10 @@ the MPX Missed Meeting form.
   can be assigned to administrators for cross-department access.
 - Task creators and authorized bulk submitters can close ongoing tasks while
   preserving completion history.
+- Task creators and department task managers can edit tasks. Title and
+  instructions remain editable after reports exist; workflow settings lock
+  after the first completion to preserve the rules used for existing reports.
+  The latest editor and edit time are recorded on the task.
 - Authorized department members or administrators can submit one completion
   batch for multiple registered characters when the task allows it. Each
   selected character receives an individual record, with the submitting account

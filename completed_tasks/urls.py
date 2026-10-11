@@ -7,6 +7,7 @@ app_name = "completed_tasks"
 urlpatterns = [
     path("", views.dashboard, name="dashboard"),
     path("tasks/create/", views.create_task, name="create_task"),
+    path("tasks/<int:task_id>/edit/", views.edit_task, name="edit_task"),
     path("tasks/<int:task_id>/close/", views.close_task, name="close_task"),
     path("tasks/<int:task_id>/submit/", views.submit_completion, name="submit"),
     path(

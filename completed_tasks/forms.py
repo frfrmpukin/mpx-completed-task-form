@@ -20,6 +20,18 @@ class CharacterMultipleChoiceField(forms.ModelMultipleChoiceField):
 
 
 class TaskForm(forms.ModelForm):
+    WORKFLOW_FIELDS = (
+        "department_group",
+        "assigned_groups",
+        "assigned_users",
+        "requires_approval",
+        "allow_bulk_submissions",
+        "approver_groups",
+        "approver_users",
+        "frequency",
+        "max_completions",
+        "limit_scope",
+    )
     REQUIREMENT_LABELS = {
         "title": ("Required", "required"),
         "instructions": ("Required", "required"),
@@ -130,8 +142,15 @@ class TaskForm(forms.ModelForm):
             ),
         }
 
-    def __init__(self, *args, department_queryset=None, **kwargs):
+    def __init__(
+        self,
+        *args,
+        department_queryset=None,
+        workflow_locked=False,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
+        self.workflow_locked = workflow_locked
         user_model = get_user_model()
         self.fields["department_group"].queryset = (
             department_queryset
@@ -139,6 +158,8 @@ class TaskForm(forms.ModelForm):
             else Group.objects.order_by("name")
         )
         self.fields["department_group"].required = True
+        if workflow_locked and self.instance.department_group_id is None:
+            self.fields["department_group"].required = False
         self.fields["assigned_groups"].queryset = Group.objects.order_by("name")
         self.fields["approver_groups"].queryset = Group.objects.order_by("name")
         user_queryset = user_model._default_manager.all()
@@ -150,6 +171,9 @@ class TaskForm(forms.ModelForm):
         self.fields["approver_users"].queryset = (
             user_queryset.order_by(user_model.USERNAME_FIELD)
         )
+        if workflow_locked:
+            for field_name in self.WORKFLOW_FIELDS:
+                self.fields[field_name].disabled = True
         self._set_requirement_labels()
         self.sections = (
             {

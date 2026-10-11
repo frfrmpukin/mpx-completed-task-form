@@ -182,7 +182,7 @@ textarea { min-height: 92px; resize: vertical; }
                                 <p>Scan the assigned system and submit the systems visited in your notes.</p>
                                 <span class="badge yellow">Approval required</span>
                                 <span class="badge">Limit: 3 per pilot</span>
-                                <div style="margin-top:14px;display:flex;gap:7px;flex-wrap:wrap"><button class="btn sm" data-go="submit">Report completion</button><button class="btn sm outline" data-go="bulk-submit">Report for pilots</button></div>
+                                <div style="margin-top:14px;display:flex;gap:7px;flex-wrap:wrap"><button class="btn sm" data-go="submit">Report completion</button><button class="btn sm outline" data-go="bulk-submit">Report for pilots</button><button class="btn sm outline" data-go="edit">Edit task</button><button class="btn sm danger">Close task</button></div>
                             </div>
                         </article>
                         <article class="card task-card" style="margin:0">
@@ -265,6 +265,31 @@ textarea { min-height: 92px; resize: vertical; }
                     </div>
                 </section>
                 <div class="actions"><button class="btn">Create task</button><button class="btn outline" data-go="dashboard">Cancel</button></div>
+            </div>
+        </section>
+
+        <section id="edit" class="screen">
+            <h1>Edit task</h1>
+            <p class="subtle">Correct task details without changing existing completion records.</p>
+            <div class="form">
+                <div class="notice">This task already has completion reports. The title and instructions remain editable. Assignment, approval, frequency, limit, and bulk-submission settings are locked to preserve the workflow used for existing reports.</div>
+                <div class="footer-note" style="margin:-5px 0 16px">Last edited by Rin Alar on Oct 10, 2026 at 2:42 PM.</div>
+                <section class="form-section">
+                    <div class="form-section-head"><h2>1. Task details</h2><p>Update the task title or instructions. Existing completion reports remain unchanged.</p></div>
+                    <div class="form-section-body">
+                        <div class="field"><label>Task name <span class="badge requirement-required">Required</span></label><input type="text" value="Scan TEZ and GEZ structures in a system."></div>
+                        <div class="field"><label>Instructions <span class="badge requirement-required">Required</span></label><textarea>Get 1 PAP per system. Report all structures via Indy Hub. All structures must either be TEZ or GEZ structures.</textarea></div>
+                    </div>
+                </section>
+                <section class="form-section">
+                    <div class="form-section-head"><h2>Workflow settings — locked</h2><p>These settings cannot be changed after completion reports exist.</p></div>
+                    <div class="form-section-body">
+                        <div class="field"><label>Assigned groups</label><select multiple disabled><option selected>Exploration Pilots</option></select></div>
+                        <div class="field check"><input type="checkbox" checked disabled><label>Each completion requires approval</label></div>
+                        <div class="field"><label>Task type</label><select disabled><option selected>One time</option></select></div>
+                    </div>
+                </section>
+                <div class="actions"><button class="btn">Save changes</button><button class="btn outline" data-go="dashboard">Cancel</button></div>
             </div>
         </section>
 

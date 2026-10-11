@@ -1,11 +1,17 @@
 {% extends "allianceauth/base-bs5.html" %}
 
-{% block page_title %}Create task{% endblock %}
+{% block page_title %}{% if is_editing %}Edit task{% else %}Create task{% endif %}{% endblock %}
 
 {% block content %}
 <div class="container-fluid mt-4">
     <div class="row"><div class="col-12 col-xl-8">
-        <h1 class="h2 mb-2">Create task</h1>
+        <h1 class="h2 mb-2">{% if is_editing %}Edit task{% else %}Create task{% endif %}</h1>
+        {% if workflow_lock_reason %}
+        <div class="alert alert-info" role="status">{{ workflow_lock_reason }}</div>
+        {% endif %}
+        {% if is_editing and task.updated_by %}
+        <p class="small text-body-secondary">Last edited by {{ task.updated_by }} on {{ task.updated_at|date:"M j, Y H:i" }}.</p>
+        {% endif %}
         <p class="text-body-secondary mb-3">
             Set up the task step by step. Each section explains how its choices
             affect who can report work and what happens after submission.
@@ -33,7 +39,7 @@
                 <div class="alert alert-danger" role="alert">{{ error }}</div>
                 {% endfor %}
                 <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">Create task</button>
+                    <button type="submit" class="btn btn-primary">{% if is_editing %}Save changes{% else %}Create task{% endif %}</button>
                     <a class="btn btn-outline-secondary" href="{% url 'completed_tasks:dashboard' %}">Cancel</a>
                 </div>
             </form>

@@ -77,6 +77,9 @@
                                 {% if not task_card.can_submit and not task_card.can_bulk_submit and task_card.availability_message %}
                                 <p class="small text-body-secondary mb-0">{{ task_card.availability_message }}</p>
                                 {% endif %}
+                                {% if task_card.can_edit %}
+                                <a class="btn btn-sm btn-outline-secondary mt-2" href="{% url 'completed_tasks:edit_task' task.pk %}">Edit task</a>
+                                {% endif %}
                                 {% if task_card.can_close %}
                                 <form method="post" action="{% url 'completed_tasks:close_task' task.pk %}" class="mt-2">
                                     {% csrf_token %}
@@ -93,6 +96,32 @@
                 <div class="alert alert-secondary" role="status">There are no active tasks available to you.</div>
                 {% endif %}
             </section>
+
+            {% if closed_tasks %}
+            <section class="mb-4">
+                <h2 class="h4">Closed tasks you can manage</h2>
+                <div class="row g-3">
+                    {% for task in closed_tasks %}
+                    <div class="col-12 col-lg-6">
+                        <article class="card h-100">
+                            <div class="card-body">
+                                <div class="d-flex align-items-start gap-2">
+                                    <h3 class="h5 card-title me-auto">{{ task.title }}</h3>
+                                    <span class="badge text-bg-secondary">Closed</span>
+                                </div>
+                                <p class="small text-body-secondary">Department: {{ task.department_group.name|default:"Unassigned" }}</p>
+                                <p class="card-text">{{ task.instructions|linebreaksbr }}</p>
+                                {% if task.updated_by %}
+                                <p class="small text-body-secondary">Last edited by {{ task.updated_by }} on {{ task.updated_at|date:"M j, Y H:i" }}.</p>
+                                {% endif %}
+                                <a class="btn btn-sm btn-outline-secondary" href="{% url 'completed_tasks:edit_task' task.pk %}">Edit task</a>
+                            </div>
+                        </article>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+            {% endif %}
 
             {% if team_completions %}
             <section class="mb-4">

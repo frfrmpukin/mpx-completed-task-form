@@ -234,6 +234,18 @@ def dashboard(request):
                 "approver_users",
             )
         )
+    closed_task_scope = Q(created_by=user)
+    if can_manage:
+        closed_tasks = Task.objects.filter(is_active=False)
+    else:
+        if manageable_departments.exists():
+            closed_task_scope |= Q(department_group__in=manageable_departments)
+        closed_tasks = Task.objects.filter(is_active=False).filter(
+            closed_task_scope
+        )
+    closed_tasks = closed_tasks.select_related(
+        "department_group", "created_by", "updated_by"
+    )
     own_completions = TaskCompletion.objects.filter(user=user).select_related(
         "task", "task__department_group", "reviewer", "character", "submitted_by"
     )[:50]
@@ -252,12 +264,20 @@ def dashboard(request):
         pending_reviews = pending_reviews.filter(approval_scope).distinct()
     task_cards = []
     for task in tasks:
-        if _task_has_open_one_time_completion(task):
+        has_open_one_time_completion = _task_has_open_one_time_completion(task)
+        if has_open_one_time_completion and not (
+            task.created_by_id == user.pk or _can_manage_task(user, task)
+        ):
             continue
         assigned = _is_assigned(task, user)
         has_registered_character = _characters_for_user(user).exists()
         limit_reached = _completion_limit_reached(task, user)
-        can_submit = assigned and has_registered_character and not limit_reached
+        can_submit = (
+            assigned
+            and has_registered_character
+            and not limit_reached
+            and not has_open_one_time_completion
+        )
         bulk_authorized = _can_bulk_submit(user, task)
         eligible_characters = _eligible_characters(task)
         has_eligible_characters = eligible_characters.exists()
@@ -267,7 +287,10 @@ def dashboard(request):
             and not _bulk_limit_reached(task, eligible_characters)
         )
         message = ""
-        if assigned and limit_reached:
+        if has_open_one_time_completion:
+            can_submit = False
+            message = "A completion for this one-time task is awaiting review."
+        elif assigned and limit_reached:
             can_submit = False
             message = "The completion limit has been reached."
         elif assigned and not has_registered_character:
@@ -285,6 +308,9 @@ def dashboard(request):
                 "can_submit": can_submit,
                 "can_bulk_submit": can_bulk_submit,
                 "can_close": _can_close_task(user, task),
+                "can_edit": (
+                    task.created_by_id == user.pk or _can_manage_task(user, task)
+                ),
                 "availability_message": message,
             }
         )
@@ -319,6 +345,7 @@ def dashboard(request):
         "completed_tasks/dashboard.html",
         {
             "task_cards": task_cards,
+            "closed_tasks": closed_tasks,
             "own_completions": own_completions,
             "pending_reviews": pending_reviews,
             "team_completions": team_completions,
@@ -365,7 +392,103 @@ def create_task(request):
     return render(
         request,
         "completed_tasks/create_task.html",
-        {"form": form},
+        {"form": form, "is_editing": False},
+    )
+
+
+@login_required
+@permission_required("completed_tasks.access_task_reports", raise_exception=True)
+def edit_task(request, task_id):
+    task = get_object_or_404(Task.objects.select_related("department_group"), pk=task_id)
+    if task.created_by_id != request.user.pk and not _can_manage_task(
+        request.user, task
+    ):
+        raise PermissionDenied
+
+    if request.method == "POST":
+        with transaction.atomic():
+            task = get_object_or_404(
+                Task.objects.select_for_update().select_related(
+                    "department_group"
+                ),
+                pk=task_id,
+            )
+            can_manage_workflow = _can_manage_task(request.user, task)
+            if task.created_by_id != request.user.pk and not can_manage_workflow:
+                raise PermissionDenied
+            has_completions = task.completions.exists()
+            workflow_locked = has_completions or not can_manage_workflow
+            if can_manage_workflow:
+                if request.user.has_perm("completed_tasks.add_task"):
+                    department_queryset = Group.objects.order_by("name")
+                else:
+                    department_queryset = _department_groups_with_permission(
+                        request.user, "add_department_tasks"
+                    ).order_by("name")
+            else:
+                department_queryset = Group.objects.filter(
+                    pk=task.department_group_id
+                )
+            form = TaskForm(
+                request.POST,
+                instance=task,
+                department_queryset=department_queryset,
+                workflow_locked=workflow_locked,
+            )
+            if form.is_valid():
+                task = form.save(commit=False)
+                task.updated_by = request.user
+                task.save()
+                form.save_m2m()
+                messages.success(
+                    request,
+                    "Task updated. Existing completion reports remain unchanged.",
+                )
+                return redirect("completed_tasks:dashboard")
+    else:
+        can_manage_workflow = _can_manage_task(request.user, task)
+        has_completions = task.completions.exists()
+        workflow_locked = has_completions or not can_manage_workflow
+        if can_manage_workflow:
+            if request.user.has_perm("completed_tasks.add_task"):
+                department_queryset = Group.objects.order_by("name")
+            else:
+                department_queryset = _department_groups_with_permission(
+                    request.user, "add_department_tasks"
+                ).order_by("name")
+        else:
+            department_queryset = Group.objects.filter(
+                pk=task.department_group_id
+            )
+        form = TaskForm(
+            instance=task,
+            department_queryset=department_queryset,
+            workflow_locked=workflow_locked,
+        )
+
+    if has_completions:
+        workflow_lock_reason = (
+            "This task already has completion reports. Title and instructions "
+            "remain editable, but assignment, approval, frequency, limit, and "
+            "bulk-submission settings are locked to preserve the task's workflow."
+        )
+    elif not can_manage_workflow:
+        workflow_lock_reason = (
+            "You created this task but no longer have department task-management "
+            "permission. You can edit its title and instructions only."
+        )
+    else:
+        workflow_lock_reason = ""
+    return render(
+        request,
+        "completed_tasks/create_task.html",
+        {
+            "form": form,
+            "is_editing": True,
+            "task": task,
+            "workflow_locked": workflow_locked,
+            "workflow_lock_reason": workflow_lock_reason,
+        },
     )
 
 
