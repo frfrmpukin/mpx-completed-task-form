@@ -179,10 +179,12 @@ textarea { min-height: 92px; resize: vertical; }
                             <div class="card-body">
                                 <div class="task-top"><h3 class="task-title">Scan structures in a system</h3><span class="spacer"></span><span class="badge">Ongoing</span></div>
                                 <div class="muted" style="margin-top:7px">Department: Exploration</div>
+                                <span class="badge">2 PAP(s) per completion</span>
                                 <p>Scan the assigned system and submit the systems visited in your notes.</p>
                                 <span class="badge yellow">Approval required</span>
                                 <span class="badge">Limit: 3 per pilot</span>
                                 <div style="margin-top:14px;display:flex;gap:7px;flex-wrap:wrap"><button class="btn sm" data-go="submit">Report completion</button><button class="btn sm outline" data-go="bulk-submit">Report for pilots</button><button class="btn sm outline" data-go="edit">Edit task</button><button class="btn sm danger">Close task</button></div>
+                                <div class="help">Workflow settings are locked because this task already has completion reports. The title and instructions can still be edited.</div>
                             </div>
                         </article>
                         <article class="card task-card" style="margin:0">
@@ -234,6 +236,7 @@ textarea { min-height: 92px; resize: vertical; }
                     <div class="form-section-body">
                         <div class="field"><label>Task name <span class="badge requirement-required">Required</span></label><input type="text" value="Scan structures in a system"></div>
                         <div class="field"><label>Instructions <span class="badge requirement-required">Required</span></label><textarea>Scan the requested structures. In your report, list the systems you visited. Structure details remain in the existing scanning module.</textarea><div class="help">Shown to members when they report completion.</div></div>
+                        <div class="field"><label>PAP value <span class="badge requirement-required">Required</span></label><input type="number" value="1" min="1"><div class="help">Default 1 PAP per completion. Tasks under 2 hours are typically 1 PAP; add 1 PAP for each additional 2-hour block. Pilots do not enter time, and this is not calculated automatically.</div></div>
                         <div class="notice">Your department choices are limited to groups where you have task-creation permission. Admins with global permission can create tasks for any department.</div>
                         <div class="field"><label>Department <span class="badge requirement-required">Required</span></label><select><option>Select an authorized department</option><option selected>Exploration</option></select></div>
                     </div>
@@ -272,7 +275,7 @@ textarea { min-height: 92px; resize: vertical; }
             <h1>Edit task</h1>
             <p class="subtle">Correct task details without changing existing completion records.</p>
             <div class="form">
-                <div class="notice">This task already has completion reports. The title and instructions remain editable. Assignment, approval, frequency, limit, and bulk-submission settings are locked to preserve the workflow used for existing reports.</div>
+                <div class="notice">This task already has at least one completion report. The title and instructions remain editable. The department, eligible members, approval rules, frequency, completion limit, bulk-submission option, and PAP value are locked to preserve the rules that apply to existing and future reports.</div>
                 <div class="footer-note" style="margin:-5px 0 16px">Last edited by Rin Alar on Oct 10, 2026 at 2:42 PM.</div>
                 <section class="form-section">
                     <div class="form-section-head"><h2>1. Task details</h2><p>Update the task title or instructions. Existing completion reports remain unchanged.</p></div>
@@ -287,6 +290,7 @@ textarea { min-height: 92px; resize: vertical; }
                         <div class="field"><label>Assigned groups</label><select multiple disabled><option selected>Exploration Pilots</option></select></div>
                         <div class="field check"><input type="checkbox" checked disabled><label>Each completion requires approval</label></div>
                         <div class="field"><label>Task type</label><select disabled><option selected>One time</option></select></div>
+                        <div class="field"><label>PAP value</label><input type="number" value="2" disabled><div class="help">Locked after the first completion report so recorded work and future reports keep consistent task rules.</div></div>
                     </div>
                 </section>
                 <div class="actions"><button class="btn">Save changes</button><button class="btn outline" data-go="dashboard">Cancel</button></div>
@@ -363,18 +367,37 @@ textarea { min-height: 92px; resize: vertical; }
                 <div class="grid three" style="margin-bottom:18px">
                     <div><label>Department</label><select><option>All permitted departments</option><option>Exploration</option><option>Operations</option></select></div>
                     <div><label>Status</label><select><option>All statuses</option><option>Pending approval</option><option>Approved</option><option>Revision requested</option><option>Denied</option></select></div>
-                    <div><label>Search pilot or task</label><input type="text" placeholder="Type to search…"></div>
+                    <div><label>Search pilot, task, or notes</label><input type="text" placeholder="Type to search…"></div>
+                    <div><label>Completed from</label><input type="date" value="2026-10-01"></div>
+                    <div><label>Completed through</label><input type="date" value="2026-10-10"></div>
+                </div>
+                <div class="field">
+                    <label>CSV columns</label>
+                    <div class="grid three">
+                        <label><input type="checkbox" checked> Department</label>
+                        <label><input type="checkbox" checked> Task</label>
+                        <label><input type="checkbox" checked> PAP(s)</label>
+                        <label><input type="checkbox" checked> Pilot</label>
+                        <label><input type="checkbox" checked> Submitted by</label>
+                        <label><input type="checkbox" checked> Completed at</label>
+                        <label><input type="checkbox" checked> Status</label>
+                        <label><input type="checkbox" checked> Notes</label>
+                        <label><input type="checkbox" checked> Reviewer</label>
+                        <label><input type="checkbox" checked> Reviewed at</label>
+                        <label><input type="checkbox" checked> Review notes</label>
+                    </div>
+                    <div class="help">Choose which fields to include in the CSV. The on-screen table keeps its standard columns.</div>
                 </div>
                 <div class="table-wrap"><table>
-                    <thead><tr><th>Department</th><th>Task</th><th>Pilot</th><th>Completed</th><th>Status</th><th>Notes</th><th>Reviewer</th></tr></thead>
+                    <thead><tr><th>Department</th><th>Task</th><th>PAP(s)</th><th>Pilot</th><th>Completed</th><th>Status</th><th>Notes</th><th>Reviewer</th></tr></thead>
                     <tbody>
-                        <tr><td>Exploration</td><td>Scan structures in a system</td><td>Rin Alar</td><td>Oct 10, 2026</td><td><span class="badge green">Approved</span></td><td>Systems Aster and Orin</td><td>Juno Vale</td></tr>
-                        <tr><td>Operations</td><td>Submit a weekly activity summary</td><td>Juno Vale</td><td>Oct 9, 2026</td><td><span class="badge yellow">Pending approval</span></td><td>Patrol and logistics activity.</td><td>—</td></tr>
-                        <tr><td>Exploration</td><td>Map a new route</td><td>Sol Neri</td><td>Oct 8, 2026</td><td><span class="badge red">Revision requested</span></td><td>Route submitted for review.</td><td>Rin Alar</td></tr>
-                        <tr><td>Support</td><td>Assist a fleet operation</td><td>Vale Tori</td><td>Oct 7, 2026</td><td><span class="badge gray">Denied</span></td><td>Submitted outside the operation.</td><td>Juno Vale</td></tr>
+                        <tr><td>Exploration</td><td>Scan structures in a system</td><td>2</td><td>Rin Alar</td><td>Oct 10, 2026</td><td><span class="badge green">Approved</span></td><td>Systems Aster and Orin</td><td>Juno Vale</td></tr>
+                        <tr><td>Operations</td><td>Submit a weekly activity summary</td><td>1</td><td>Juno Vale</td><td>Oct 9, 2026</td><td><span class="badge yellow">Pending approval</span></td><td>Patrol and logistics activity.</td><td>—</td></tr>
+                        <tr><td>Exploration</td><td>Map a new route</td><td>1</td><td>Sol Neri</td><td>Oct 8, 2026</td><td><span class="badge red">Revision requested</span></td><td>Route submitted for review.</td><td>Rin Alar</td></tr>
+                        <tr><td>Support</td><td>Assist a fleet operation</td><td>2</td><td>Vale Tori</td><td>Oct 7, 2026</td><td><span class="badge gray">Denied</span></td><td>Submitted outside the operation.</td><td>Juno Vale</td></tr>
                     </tbody>
                 </table></div>
-                <div class="footer-note">Export CSV follows the selected filters and your authorized department scope. Global export access is controlled separately in Alliance Auth permissions.</div>
+                <div class="footer-note">The table and CSV follow the selected department, status, search, and date filters. The CSV includes only checked columns and remains limited to your authorized department scope. Global export access is controlled separately in Alliance Auth permissions.</div>
             </div></div>
         </section>
     </main>

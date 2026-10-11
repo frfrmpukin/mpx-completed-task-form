@@ -6,8 +6,8 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.models import Group
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
-from django.db.models import Q
-from django.http import Http404, HttpResponse
+from django.db.models import Exists, OuterRef, Q
+from django.http import Http404, HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -15,6 +15,8 @@ from django.utils import timezone
 from allianceauth.eveonline.models import EveCharacter
 
 from .forms import (
+    COMPLETION_EXPORT_COLUMNS,
+    CompletionReportFilterForm,
     TaskBulkCompletionForm,
     TaskCompletionForm,
     TaskForm,
@@ -103,6 +105,26 @@ def _csv_cell(value):
     if text.lstrip(" \t\r\n").startswith(("=", "+", "-", "@")):
         return f"'{text}"
     return text
+
+
+def _completion_report_filter_form(request):
+    data = request.GET.copy()
+    if "columns_configured" not in data and "columns" not in data:
+        data.setlist(
+            "columns",
+            [value for value, _ in COMPLETION_EXPORT_COLUMNS],
+        )
+    return CompletionReportFilterForm(data)
+
+
+def _filter_completions_by_date(completions, cleaned_data):
+    date_from = cleaned_data.get("date_from")
+    date_to = cleaned_data.get("date_to")
+    if date_from:
+        completions = completions.filter(completed_at__date__gte=date_from)
+    if date_to:
+        completions = completions.filter(completed_at__date__lte=date_to)
+    return completions
 
 
 def _can_approve(task, user):
@@ -226,6 +248,11 @@ def dashboard(request):
             Task.objects.filter(is_active=True)
             .filter(task_scope)
             .distinct()
+            .annotate(
+                has_completions=Exists(
+                    TaskCompletion.objects.filter(task_id=OuterRef("pk"))
+                )
+            )
             .select_related("department_group")
             .prefetch_related(
                 "assigned_groups",
@@ -245,6 +272,10 @@ def dashboard(request):
         )
     closed_tasks = closed_tasks.select_related(
         "department_group", "created_by", "updated_by"
+    ).annotate(
+        has_completions=Exists(
+            TaskCompletion.objects.filter(task_id=OuterRef("pk"))
+        )
     )
     own_completions = TaskCompletion.objects.filter(user=user).select_related(
         "task", "task__department_group", "reviewer", "character", "submitted_by"
@@ -264,6 +295,7 @@ def dashboard(request):
         pending_reviews = pending_reviews.filter(approval_scope).distinct()
     task_cards = []
     for task in tasks:
+        has_completions = task.has_completions
         has_open_one_time_completion = _task_has_open_one_time_completion(task)
         if has_open_one_time_completion and not (
             task.created_by_id == user.pk or _can_manage_task(user, task)
@@ -308,6 +340,7 @@ def dashboard(request):
                 "can_submit": can_submit,
                 "can_bulk_submit": can_bulk_submit,
                 "can_close": _can_close_task(user, task),
+                "has_completions": has_completions,
                 "can_edit": (
                     task.created_by_id == user.pk or _can_manage_task(user, task)
                 ),
@@ -468,9 +501,11 @@ def edit_task(request, task_id):
 
     if has_completions:
         workflow_lock_reason = (
-            "This task already has completion reports. Title and instructions "
-            "remain editable, but assignment, approval, frequency, limit, and "
-            "bulk-submission settings are locked to preserve the task's workflow."
+            "This task already has at least one completion report. You can still "
+            "edit its title and instructions, but the department, eligible "
+            "members, approval rules, frequency, completion limit, bulk-submission "
+            "option, and PAP value are locked. Keeping these settings unchanged "
+            "preserves the rules that apply to existing and future reports."
         )
     elif not can_manage_workflow:
         workflow_lock_reason = (
@@ -777,6 +812,11 @@ def review_completion(request, completion_id):
 @permission_required("completed_tasks.access_task_reports", raise_exception=True)
 def all_completions(request):
     user = request.user
+    filter_form = _completion_report_filter_form(request)
+    filter_form_valid = filter_form.is_valid()
+    date_filters_valid = not (
+        filter_form.errors.get("date_from") or filter_form.errors.get("date_to")
+    )
     can_view_all = user.has_perm("completed_tasks.view_all_completions")
     visible_departments = _department_groups_with_permission(
         user, "view_department_completions"
@@ -793,6 +833,10 @@ def all_completions(request):
         "task", "task__department_group", "user", "reviewer",
         "character", "submitted_by"
     )
+    if date_filters_valid:
+        completions = _filter_completions_by_date(
+            completions, filter_form.cleaned_data
+        )
     if not can_view_all:
         completions = completions.filter(task__department_group__in=visible_departments)
 
@@ -825,9 +869,12 @@ def all_completions(request):
     export_url = reverse("completed_tasks:export_completions")
     if request.GET:
         export_url = f"{export_url}?{request.GET.urlencode()}"
-    can_export = can_export_all or (
-        bool(selected_department)
-        and export_departments.filter(pk=selected_department).exists()
+    can_export = filter_form_valid and (
+        can_export_all
+        or (
+            bool(selected_department)
+            and export_departments.filter(pk=selected_department).exists()
+        )
     )
     return render(
         request,
@@ -839,6 +886,7 @@ def all_completions(request):
             "selected_status": selected_status,
             "status_choices": TaskCompletion.Status.choices,
             "search": search,
+            "filter_form": filter_form,
             "can_export": can_export,
             "export_url": export_url,
         },
@@ -849,6 +897,9 @@ def all_completions(request):
 @permission_required("completed_tasks.access_task_reports", raise_exception=True)
 def export_completions(request):
     user = request.user
+    filter_form = _completion_report_filter_form(request)
+    if not filter_form.is_valid():
+        return HttpResponseBadRequest("Correct the report filters before exporting.")
     can_export_all = user.has_perm("completed_tasks.export_all_completions")
     export_departments = _department_groups_with_permission(
         user, "export_department_completions"
@@ -859,6 +910,9 @@ def export_completions(request):
     completions = TaskCompletion.objects.select_related(
         "task", "task__department_group", "user", "reviewer",
         "character", "submitted_by"
+    )
+    completions = _filter_completions_by_date(
+        completions, filter_form.cleaned_data
     )
     if not can_export_all:
         completions = completions.filter(
@@ -895,43 +949,42 @@ def export_completions(request):
     response["Content-Disposition"] = 'attachment; filename="task-completions.csv"'
     response.write("\ufeff")
     writer = csv.writer(response)
-    writer.writerow(
-        (
-            "Department",
-            "Task",
-            "Pilot",
-            "Submitted by",
-            "Completed at",
-            "Status",
-            "Notes",
-            "Reviewer",
-            "Reviewed at",
-            "Review notes",
-        )
-    )
+    selected_columns = filter_form.cleaned_data["columns"]
+    column_labels = dict(COMPLETION_EXPORT_COLUMNS)
+    writer.writerow([column_labels[column] for column in selected_columns])
     for completion in completions.order_by("-completed_at").iterator():
-        writer.writerow(
-            (
+        column_values = {
+            "department": (
                 _csv_cell(completion.task.department_group.name)
                 if completion.task.department_group
-                else "",
-                _csv_cell(completion.task.title),
-                _csv_cell(
-                    completion.character.character_name
-                    if completion.character
-                    else completion.user.get_username()
-                ),
+                else ""
+            ),
+            "task": _csv_cell(completion.task.title),
+            "pap_value": completion.task.pap_value,
+            "pilot": _csv_cell(
+                completion.character.character_name
+                if completion.character
+                else completion.user.get_username()
+            ),
+            "submitted_by": (
                 _csv_cell(completion.submitted_by.get_username())
                 if completion.submitted_by
-                else "",
-                completion.completed_at.isoformat(),
-                completion.get_status_display(),
-                _csv_cell(completion.notes),
+                else ""
+            ),
+            "completed_at": completion.completed_at.isoformat(),
+            "status": completion.get_status_display(),
+            "notes": _csv_cell(completion.notes),
+            "reviewer": (
                 _csv_cell(completion.reviewer.get_username())
                 if completion.reviewer
-                else "",
-                completion.reviewed_at.isoformat() if completion.reviewed_at else "",
-                _csv_cell(completion.review_notes),
-            )
-        )
+                else ""
+            ),
+            "reviewed_at": (
+                completion.reviewed_at.isoformat()
+                if completion.reviewed_at
+                else ""
+            ),
+            "review_notes": _csv_cell(completion.review_notes),
+        }
+        writer.writerow([column_values[column] for column in selected_columns])
     return response

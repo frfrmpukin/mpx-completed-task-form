@@ -61,6 +61,7 @@
                                     {% if task.requires_approval %}<span class="badge text-bg-warning">Approval required</span>{% endif %}
                                 </div>
                                 <p class="small text-body-secondary">Department: {{ task.department_group.name|default:"Unassigned" }}</p>
+                                <p class="small"><span class="badge text-bg-info">{{ task.pap_value }} PAP(s)</span></p>
                                 <p class="card-text">{{ task.instructions|linebreaksbr }}</p>
                                 {% if task.max_completions %}
                                 <p class="small text-body-secondary">
@@ -79,6 +80,9 @@
                                 {% endif %}
                                 {% if task_card.can_edit %}
                                 <a class="btn btn-sm btn-outline-secondary mt-2" href="{% url 'completed_tasks:edit_task' task.pk %}">Edit task</a>
+                                {% if task_card.has_completions %}
+                                <p class="small text-body-secondary mt-2 mb-0">Workflow settings are locked because this task already has completion reports. You can still edit the title and instructions.</p>
+                                {% endif %}
                                 {% endif %}
                                 {% if task_card.can_close %}
                                 <form method="post" action="{% url 'completed_tasks:close_task' task.pk %}" class="mt-2">
@@ -110,11 +114,15 @@
                                     <span class="badge text-bg-secondary">Closed</span>
                                 </div>
                                 <p class="small text-body-secondary">Department: {{ task.department_group.name|default:"Unassigned" }}</p>
+                                <p class="small"><span class="badge text-bg-info">{{ task.pap_value }} PAP(s)</span></p>
                                 <p class="card-text">{{ task.instructions|linebreaksbr }}</p>
                                 {% if task.updated_by %}
                                 <p class="small text-body-secondary">Last edited by {{ task.updated_by }} on {{ task.updated_at|date:"M j, Y H:i" }}.</p>
                                 {% endif %}
                                 <a class="btn btn-sm btn-outline-secondary" href="{% url 'completed_tasks:edit_task' task.pk %}">Edit task</a>
+                                {% if task.has_completions %}
+                                <p class="small text-body-secondary mt-2 mb-0">Workflow settings are locked because this task already has completion reports. You can still edit the title and instructions.</p>
+                                {% endif %}
                             </div>
                         </article>
                     </div>

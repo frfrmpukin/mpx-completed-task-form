@@ -9,6 +9,21 @@ from allianceauth.eveonline.models import EveCharacter
 from .models import Task, TaskCompletion
 
 
+COMPLETION_EXPORT_COLUMNS = (
+    ("department", "Department"),
+    ("task", "Task"),
+    ("pap_value", "PAP(s)"),
+    ("pilot", "Pilot"),
+    ("submitted_by", "Submitted by"),
+    ("completed_at", "Completed at"),
+    ("status", "Status"),
+    ("notes", "Notes"),
+    ("reviewer", "Reviewer"),
+    ("reviewed_at", "Reviewed at"),
+    ("review_notes", "Review notes"),
+)
+
+
 class CharacterChoiceField(forms.ModelChoiceField):
     def label_from_instance(self, obj):
         return f"{obj.character_name} — {obj.character_ownership.user}"
@@ -19,8 +34,38 @@ class CharacterMultipleChoiceField(forms.ModelMultipleChoiceField):
         return f"{obj.character_name} — {obj.character_ownership.user}"
 
 
+class CompletionReportFilterForm(forms.Form):
+    date_from = forms.DateField(
+        required=False,
+        label="Completed from",
+        widget=forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+    )
+    date_to = forms.DateField(
+        required=False,
+        label="Completed through",
+        widget=forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+    )
+    columns = forms.MultipleChoiceField(
+        choices=COMPLETION_EXPORT_COLUMNS,
+        initial=[value for value, _ in COMPLETION_EXPORT_COLUMNS],
+        widget=forms.CheckboxSelectMultiple(attrs={"class": "form-check-input"}),
+        error_messages={"required": "Select at least one CSV column to export."},
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        date_from = cleaned_data.get("date_from")
+        date_to = cleaned_data.get("date_to")
+        if date_from and date_to and date_from > date_to:
+            self.add_error(
+                "date_to", "The end date must be on or after the start date."
+            )
+        return cleaned_data
+
+
 class TaskForm(forms.ModelForm):
     WORKFLOW_FIELDS = (
+        "pap_value",
         "department_group",
         "assigned_groups",
         "assigned_users",
@@ -35,6 +80,7 @@ class TaskForm(forms.ModelForm):
     REQUIREMENT_LABELS = {
         "title": ("Required", "required"),
         "instructions": ("Required", "required"),
+        "pap_value": ("Required", "required"),
         "department_group": ("Required", "required"),
         "assigned_groups": ("Optional", "optional"),
         "assigned_users": ("Optional", "optional"),
@@ -52,6 +98,7 @@ class TaskForm(forms.ModelForm):
         fields = (
             "title",
             "instructions",
+            "pap_value",
             "department_group",
             "assigned_groups",
             "assigned_users",
@@ -67,6 +114,9 @@ class TaskForm(forms.ModelForm):
             "title": forms.TextInput(attrs={"class": "form-control"}),
             "instructions": forms.Textarea(
                 attrs={"rows": 4, "class": "form-control"}
+            ),
+            "pap_value": forms.NumberInput(
+                attrs={"class": "form-control", "min": 1, "step": 1}
             ),
             "department_group": forms.Select(attrs={"class": "form-select"}),
             "assigned_groups": forms.SelectMultiple(attrs={"class": "form-select"}),
@@ -91,6 +141,13 @@ class TaskForm(forms.ModelForm):
                 "Required. Explain what members need to do and what to include "
                 "in their completion notes. Detailed data can remain in the "
                 "existing game or scanning module."
+            ),
+            "pap_value": (
+                "Required; defaults to 1 PAP per accepted completion. Set the "
+                "value with the task's expected duration in mind: work under "
+                "2 hours is typically 1 PAP, with 1 additional PAP for each "
+                "additional 2-hour block. Pilots do not enter time, and this "
+                "value is not calculated automatically."
             ),
             "department_group": (
                 "Required. Sets the department that owns this task and controls "
@@ -186,6 +243,7 @@ class TaskForm(forms.ModelForm):
                 "fields": (
                     self["title"],
                     self["instructions"],
+                    self["pap_value"],
                     self["department_group"],
                 ),
             },

@@ -17,6 +17,11 @@ class Task(models.Model):
 
     title = models.CharField(max_length=200)
     instructions = models.TextField()
+    pap_value = models.PositiveSmallIntegerField(
+        default=1,
+        validators=(MinValueValidator(1),),
+        help_text="PAP value assigned to each accepted completion.",
+    )
     department_group = models.ForeignKey(
         Group,
         blank=True,

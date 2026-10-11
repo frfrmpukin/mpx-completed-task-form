@@ -11,6 +11,9 @@ the MPX Missed Meeting form.
   to groups, individuals, or both.
 - Task creators choose one-time or ongoing tasks and whether each completion
   requires approval.
+- Each task has a PAP value (default 1) displayed to eligible pilots. Task
+  creators set it according to expected duration; the app does not ask pilots
+  to report time or calculate PAP from elapsed time.
 - Approval can be routed to selected groups and/or individual users.
 - Reviewers can approve a completion, request a revision, or deny it
   permanently. Revisions are resubmitted to the review queue.
@@ -20,6 +23,9 @@ the MPX Missed Meeting form.
 - Department-authorized users can create tasks and view/export reports only for
   department groups where they have the matching permission. Global permissions
   can be assigned to administrators for cross-department access.
+- The reports page can filter by department, status, search text, and an
+  inclusive completed-date range. CSV exports can include any selected subset
+  of report columns; all columns are included by default.
 - Task creators and authorized bulk submitters can close ongoing tasks while
   preserving completion history.
 - Task creators and department task managers can edit tasks. Title and
@@ -35,7 +41,8 @@ the MPX Missed Meeting form.
 - Completion notes provide a short summary; detailed structure data can remain
   in the existing structures module.
 
-This app reports task completions; it is not a task manager or PAP system.
+This app reports task completions and displays the configured PAP value; it does
+not calculate or award PAP through an external PAP system.
 
 ## Task and completion fields
 
@@ -51,6 +58,7 @@ their related option is enabled.
 |---|---|---|
 | **Task name** | Yes | Short title shown in task lists, history, and reports. |
 | **Instructions** | Yes | Tells members what work to do and what to include in their completion notes. Detailed game or scanning data can remain in its existing module. |
+| **PAP value** | Yes; defaults to 1 | Expected PAP credit per completion, displayed on task cards. Use 1 PAP for tasks expected to take under 2 hours, and add 1 PAP for each additional 2-hour block. The value is set by the task creator; pilots do not submit time and the app does not calculate or award PAP automatically. |
 | **Department** | Yes | Selects the owning Alliance Auth group. Department permissions scope task creation, approvals, reporting, and exports. Choices are limited to departments the creator is allowed to manage; global task creators can choose any group. |
 | **Who can report: groups** | At least one group or individual is required | Every member of a selected group is eligible to submit the task. |
 | **Who can report: individuals** | At least one group or individual is required | Selected individuals are also eligible, whether or not they belong to an assigned group. |
