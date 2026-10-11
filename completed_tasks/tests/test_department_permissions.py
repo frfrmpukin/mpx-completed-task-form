@@ -206,6 +206,20 @@ class DepartmentPermissionsTests(TestCase):
         self.assertContains(response, "2 PAP(s)")
         self.assertContains(response, "Workflow settings are locked")
 
+    def test_dashboard_global_report_view_permission_loads_completion_state(self):
+        self.user.user_permissions.add(
+            Permission.objects.get(
+                content_type__app_label="completed_tasks",
+                codename="view_all_completions",
+            )
+        )
+        TaskCompletion.objects.create(task=self.task, user=self.user)
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("completed_tasks:dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+
     def test_all_reports_displays_task_pap_value(self):
         self.task.pap_value = 3
         self.task.save(update_fields=("pap_value",))

@@ -223,6 +223,11 @@ def dashboard(request):
     if can_view_all or can_approve_any:
         tasks = (
             Task.objects.filter(is_active=True)
+            .annotate(
+                has_completions=Exists(
+                    TaskCompletion.objects.filter(task_id=OuterRef("pk"))
+                )
+            )
             .select_related("department_group")
             .prefetch_related(
                 "assigned_groups",
