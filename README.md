@@ -32,6 +32,9 @@ the MPX Missed Meeting form.
   instructions remain editable after reports exist; workflow settings lock
   after the first completion to preserve the rules used for existing reports.
   The latest editor and edit time are recorded on the task.
+- Alliance Auth superusers have a separate Task Reporter records page to edit or
+  permanently delete any task or completion report regardless of status.
+  Deleting a task from that page also permanently deletes its completion history.
 - Authorized department members or administrators can submit one completion
   batch for multiple registered characters when the task allows it. Each
   selected character receives an individual record, with the submitting account
@@ -101,7 +104,8 @@ group/user assignments. Department-level permissions are assigned to the
 department's Alliance Auth group; the user must belong to that group. The
 models are intentionally not registered in Django Admin; task work is managed
 through the app, while access to Django Admin remains governed by Alliance
-Auth's existing staff permissions.
+Auth's existing staff permissions. Alliance Auth superusers can use the separate
+in-app records page for task and completion corrections.
 
 ## Permissions
 

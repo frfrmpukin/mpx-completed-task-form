@@ -5,8 +5,9 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.models import Group
 from django.core.exceptions import PermissionDenied
+from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Exists, OuterRef, Q
+from django.db.models import Count, Exists, OuterRef, Q
 from django.http import Http404, HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -17,6 +18,8 @@ from allianceauth.eveonline.models import EveCharacter
 from .forms import (
     COMPLETION_EXPORT_COLUMNS,
     CompletionReportFilterForm,
+    SuperadminCompletionForm,
+    SuperadminTaskForm,
     TaskBulkCompletionForm,
     TaskCompletionForm,
     TaskForm,
@@ -393,6 +396,121 @@ def dashboard(request):
             "user": user,
         },
     )
+
+
+@login_required
+def superadmin_records(request):
+    if not request.user.is_superuser:
+        raise PermissionDenied
+    search = request.GET.get("q", "").strip()
+    tasks = (
+        Task.objects.select_related("department_group", "created_by")
+        .annotate(completion_count=Count("completions"))
+        .order_by("-created_at", "-pk")
+    )
+    completions = TaskCompletion.objects.select_related(
+        "task", "user", "character", "submitted_by"
+    ).order_by("-completed_at", "-pk")
+    if search:
+        task_search = (
+            Q(title__icontains=search)
+            | Q(instructions__icontains=search)
+            | Q(department_group__name__icontains=search)
+            | Q(created_by__username__icontains=search)
+        )
+        completion_search = (
+            Q(task__title__icontains=search)
+            | Q(user__username__icontains=search)
+            | Q(character__character_name__icontains=search)
+            | Q(submitted_by__username__icontains=search)
+            | Q(reviewer__username__icontains=search)
+            | Q(notes__icontains=search)
+            | Q(review_notes__icontains=search)
+            | Q(status__icontains=search)
+        )
+        if search.isdigit():
+            task_search |= Q(pk=int(search))
+            completion_search |= Q(pk=int(search))
+        tasks = tasks.filter(task_search)
+        completions = completions.filter(completion_search)
+    return render(
+        request,
+        "completed_tasks/superadmin_records.html",
+        {
+            "tasks": Paginator(tasks, 25).get_page(request.GET.get("task_page")),
+            "completions": Paginator(completions, 25).get_page(
+                request.GET.get("completion_page")
+            ),
+            "search": search,
+        },
+    )
+
+
+@login_required
+def superadmin_edit_task(request, task_id):
+    if not request.user.is_superuser:
+        raise PermissionDenied
+    task = get_object_or_404(Task, pk=task_id)
+    form = SuperadminTaskForm(request.POST or None, instance=task)
+    if request.method == "POST" and form.is_valid():
+        task = form.save(commit=False)
+        task.updated_by = request.user
+        task.save()
+        form.save_m2m()
+        messages.success(request, "Task record updated.")
+        return redirect("completed_tasks:superadmin_records")
+    return render(
+        request,
+        "completed_tasks/superadmin_edit_record.html",
+        {"form": form, "record": task, "record_type": "task"},
+    )
+
+
+@login_required
+def superadmin_edit_completion(request, completion_id):
+    if not request.user.is_superuser:
+        raise PermissionDenied
+    completion = get_object_or_404(TaskCompletion, pk=completion_id)
+    form = SuperadminCompletionForm(request.POST or None, instance=completion)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Completion report updated.")
+        return redirect("completed_tasks:superadmin_records")
+    return render(
+        request,
+        "completed_tasks/superadmin_edit_record.html",
+        {"form": form, "record": completion, "record_type": "completion"},
+    )
+
+
+@login_required
+def superadmin_delete_task(request, task_id):
+    if not request.user.is_superuser:
+        raise PermissionDenied
+    if request.method != "POST":
+        raise Http404
+    with transaction.atomic():
+        task = get_object_or_404(Task.objects.select_for_update(), pk=task_id)
+        completion_count = task.completions.count()
+        task.completions.all().delete()
+        task.delete()
+    messages.success(
+        request,
+        f"Task and {completion_count} associated completion report(s) permanently deleted.",
+    )
+    return redirect("completed_tasks:superadmin_records")
+
+
+@login_required
+def superadmin_delete_completion(request, completion_id):
+    if not request.user.is_superuser:
+        raise PermissionDenied
+    if request.method != "POST":
+        raise Http404
+    completion = get_object_or_404(TaskCompletion, pk=completion_id)
+    completion.delete()
+    messages.success(request, "Completion report permanently deleted.")
+    return redirect("completed_tasks:superadmin_records")
 
 
 def models_q_for_user(user):

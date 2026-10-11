@@ -24,6 +24,17 @@ COMPLETION_EXPORT_COLUMNS = (
 )
 
 
+def _apply_bootstrap_classes(form):
+    for field in form.fields.values():
+        if isinstance(field.widget, forms.CheckboxInput):
+            css_class = "form-check-input"
+        elif isinstance(field.widget, (forms.Select, forms.SelectMultiple)):
+            css_class = "form-select"
+        else:
+            css_class = "form-control"
+        field.widget.attrs["class"] = css_class
+
+
 class CharacterChoiceField(forms.ModelChoiceField):
     def label_from_instance(self, obj):
         return f"{obj.character_name} — {obj.character_ownership.user}"
@@ -61,6 +72,93 @@ class CompletionReportFilterForm(forms.Form):
                 "date_to", "The end date must be on or after the start date."
             )
         return cleaned_data
+
+
+class SuperadminTaskForm(forms.ModelForm):
+    class Meta:
+        model = Task
+        fields = (
+            "title",
+            "instructions",
+            "pap_value",
+            "department_group",
+            "assigned_groups",
+            "assigned_users",
+            "approver_groups",
+            "approver_users",
+            "requires_approval",
+            "allow_bulk_submissions",
+            "frequency",
+            "max_completions",
+            "limit_scope",
+            "is_active",
+            "created_by",
+            "created_at",
+        )
+        widgets = {
+            "instructions": forms.Textarea(attrs={"rows": 4}),
+            "assigned_groups": forms.SelectMultiple(attrs={"size": 8}),
+            "assigned_users": forms.SelectMultiple(attrs={"size": 8}),
+            "approver_groups": forms.SelectMultiple(attrs={"size": 8}),
+            "approver_users": forms.SelectMultiple(attrs={"size": 8}),
+            "created_at": forms.DateTimeInput(
+                format="%Y-%m-%dT%H:%M",
+                attrs={"type": "datetime-local"},
+            ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["department_group"].queryset = Group.objects.order_by("name")
+        user_model = get_user_model()
+        for field_name in ("assigned_users", "approver_users", "created_by"):
+            self.fields[field_name].queryset = user_model._default_manager.order_by(
+                user_model.USERNAME_FIELD
+            )
+        self.fields["created_by"].required = False
+        _apply_bootstrap_classes(self)
+
+
+class SuperadminCompletionForm(forms.ModelForm):
+    class Meta:
+        model = TaskCompletion
+        fields = (
+            "task",
+            "user",
+            "character",
+            "submitted_by",
+            "completed_at",
+            "notes",
+            "status",
+            "reviewer",
+            "reviewed_at",
+            "review_notes",
+            "submitted_at",
+        )
+        widgets = {
+            "completed_at": forms.DateTimeInput(
+                format="%Y-%m-%dT%H:%M",
+                attrs={"type": "datetime-local"},
+            ),
+            "reviewed_at": forms.DateTimeInput(
+                format="%Y-%m-%dT%H:%M",
+                attrs={"type": "datetime-local"},
+            ),
+            "submitted_at": forms.DateTimeInput(
+                format="%Y-%m-%dT%H:%M",
+                attrs={"type": "datetime-local"},
+            ),
+            "notes": forms.Textarea(attrs={"rows": 4}),
+            "review_notes": forms.Textarea(attrs={"rows": 4}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        user_model = get_user_model()
+        users = user_model._default_manager.order_by(user_model.USERNAME_FIELD)
+        for field_name in ("user", "submitted_by", "reviewer"):
+            self.fields[field_name].queryset = users
+        _apply_bootstrap_classes(self)
 
 
 class TaskForm(forms.ModelForm):

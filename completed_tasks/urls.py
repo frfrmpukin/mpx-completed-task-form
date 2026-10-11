@@ -6,6 +6,27 @@ app_name = "completed_tasks"
 
 urlpatterns = [
     path("", views.dashboard, name="dashboard"),
+    path("superadmin/records/", views.superadmin_records, name="superadmin_records"),
+    path(
+        "superadmin/tasks/<int:task_id>/edit/",
+        views.superadmin_edit_task,
+        name="superadmin_edit_task",
+    ),
+    path(
+        "superadmin/tasks/<int:task_id>/delete/",
+        views.superadmin_delete_task,
+        name="superadmin_delete_task",
+    ),
+    path(
+        "superadmin/completions/<int:completion_id>/edit/",
+        views.superadmin_edit_completion,
+        name="superadmin_edit_completion",
+    ),
+    path(
+        "superadmin/completions/<int:completion_id>/delete/",
+        views.superadmin_delete_completion,
+        name="superadmin_delete_completion",
+    ),
     path("tasks/create/", views.create_task, name="create_task"),
     path("tasks/<int:task_id>/edit/", views.edit_task, name="edit_task"),
     path("tasks/<int:task_id>/close/", views.close_task, name="close_task"),

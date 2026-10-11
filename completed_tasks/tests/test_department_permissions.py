@@ -220,6 +220,122 @@ class DepartmentPermissionsTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
 
+    def test_superadmin_records_page_is_for_superusers_only(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("completed_tasks:superadmin_records"))
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_superadmin_can_edit_task_workflow_after_completions_exist(self):
+        self.task.assigned_groups.add(self.department)
+        self.task.created_by = self.user
+        self.task.save(update_fields=("created_by",))
+        TaskCompletion.objects.create(task=self.task, user=self.user)
+        superadmin = get_user_model().objects.create_user(
+            username="task-superadmin",
+            password="test-password",
+            is_superuser=True,
+            is_staff=True,
+        )
+        self.client.force_login(superadmin)
+
+        response = self.client.post(
+            reverse("completed_tasks:superadmin_edit_task", args=(self.task.pk,)),
+            {
+                "title": "Admin-corrected task",
+                "instructions": "Corrected instructions.",
+                "pap_value": "4",
+                "department_group": str(self.department.pk),
+                "frequency": Task.Frequency.ONGOING,
+                "limit_scope": Task.LimitScope.PER_USER,
+                "is_active": "on",
+                "created_by": str(self.user.pk),
+                "created_at": self.task.created_at.strftime("%Y-%m-%dT%H:%M"),
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.task.refresh_from_db()
+        self.assertEqual(self.task.title, "Admin-corrected task")
+        self.assertEqual(self.task.pap_value, 4)
+
+    def test_superadmin_can_edit_completion_in_any_status(self):
+        completion = TaskCompletion.objects.create(
+            task=self.task,
+            user=self.user,
+            status=TaskCompletion.Status.DENIED,
+        )
+        superadmin = get_user_model().objects.create_user(
+            username="task-superadmin",
+            password="test-password",
+            is_superuser=True,
+            is_staff=True,
+        )
+        self.client.force_login(superadmin)
+
+        response = self.client.post(
+            reverse(
+                "completed_tasks:superadmin_edit_completion",
+                args=(completion.pk,),
+            ),
+            {
+                "task": str(self.task.pk),
+                "user": str(self.user.pk),
+                "completed_at": completion.completed_at.strftime("%Y-%m-%dT%H:%M"),
+                "notes": "Corrected report",
+                "status": TaskCompletion.Status.APPROVED,
+                "submitted_at": completion.submitted_at.strftime("%Y-%m-%dT%H:%M"),
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        completion.refresh_from_db()
+        self.assertEqual(completion.status, TaskCompletion.Status.APPROVED)
+        self.assertEqual(completion.notes, "Corrected report")
+
+    def test_superadmin_task_deletion_also_deletes_completion_history(self):
+        completion = TaskCompletion.objects.create(task=self.task, user=self.user)
+        superadmin = get_user_model().objects.create_user(
+            username="task-superadmin",
+            password="test-password",
+            is_superuser=True,
+            is_staff=True,
+        )
+        self.client.force_login(superadmin)
+
+        response = self.client.post(
+            reverse("completed_tasks:superadmin_delete_task", args=(self.task.pk,))
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(TaskCompletion.objects.filter(pk=completion.pk).exists())
+        self.assertFalse(Task.objects.filter(pk=self.task.pk).exists())
+
+    def test_superadmin_can_delete_individual_completion_report(self):
+        completion = TaskCompletion.objects.create(
+            task=self.task,
+            user=self.user,
+            status=TaskCompletion.Status.APPROVED,
+        )
+        superadmin = get_user_model().objects.create_user(
+            username="task-superadmin",
+            password="test-password",
+            is_superuser=True,
+            is_staff=True,
+        )
+        self.client.force_login(superadmin)
+
+        response = self.client.post(
+            reverse(
+                "completed_tasks:superadmin_delete_completion",
+                args=(completion.pk,),
+            )
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(TaskCompletion.objects.filter(pk=completion.pk).exists())
+
     def test_all_reports_displays_task_pap_value(self):
         self.task.pap_value = 3
         self.task.save(update_fields=("pap_value",))
