@@ -231,6 +231,7 @@ class DepartmentPermissionsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "<th scope=\"col\">PAP(s)</th>", html=True)
         self.assertContains(response, "<td class=\"text-nowrap\">3</td>", html=True)
+        self.assertContains(response, "row-cols-1 row-cols-sm-2 row-cols-lg-3")
 
     def test_all_reports_filters_completions_by_inclusive_date_range(self):
         now = timezone.now()
