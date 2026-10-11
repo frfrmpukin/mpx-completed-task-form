@@ -9,7 +9,7 @@
             <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
                 <h1 class="h2 mb-0 me-auto">Task Reports</h1>
                 {% if user.is_superuser %}
-                <a class="btn btn-outline-danger" href="{% url 'completed_tasks:superadmin_records' %}">Superadmin records</a>
+                <a class="btn btn-outline-danger" href="{% url 'completed_tasks:superadmin_records' %}">Superadmin Controls</a>
                 {% endif %}
                 {% if can_create_tasks %}
                 <a class="btn btn-primary" href="{% url 'completed_tasks:create_task' %}">Create task</a>
@@ -76,7 +76,7 @@
                                 <a class="btn btn-sm btn-primary" href="{% url 'completed_tasks:submit' task.pk %}">Report completion</a>
                                 {% endif %}
                                 {% if task_card.can_bulk_submit %}
-                                <a class="btn btn-sm btn-outline-primary" href="{% url 'completed_tasks:bulk_submit' task.pk %}">Report for pilots</a>
+                                <a class="btn btn-sm btn-outline-primary" href="{% url 'completed_tasks:bulk_submit' task.pk %}">Report Bulk Completion</a>
                                 {% endif %}
                                 {% if not task_card.can_submit and not task_card.can_bulk_submit and task_card.availability_message %}
                                 <p class="small text-body-secondary mb-0">{{ task_card.availability_message }}</p>
