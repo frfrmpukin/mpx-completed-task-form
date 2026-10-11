@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
@@ -72,6 +74,28 @@ class CompletionReportFilterForm(forms.Form):
                 "date_to", "The end date must be on or after the start date."
             )
         return cleaned_data
+
+
+class MonthlyPapReportForm(forms.Form):
+    month = forms.CharField(
+        label="Month",
+        widget=forms.DateInput(
+            format="%Y-%m",
+            attrs={"type": "month", "class": "form-control"},
+        ),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.is_bound:
+            self.initial["month"] = timezone.localdate().strftime("%Y-%m")
+
+    def clean_month(self):
+        month_value = self.cleaned_data["month"]
+        try:
+            return datetime.strptime(month_value, "%Y-%m").date()
+        except ValueError as error:
+            raise forms.ValidationError("Choose a valid month.") from error
 
 
 class SuperadminTaskForm(forms.ModelForm):

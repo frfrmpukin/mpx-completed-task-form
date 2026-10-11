@@ -1,0 +1,110 @@
+{% extends "allianceauth/base-bs5.html" %}
+
+{% block page_title %}Monthly PAP totals{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <h1 class="h2 mb-0 me-auto">Monthly PAP totals</h1>
+        {% if can_export %}
+        <a class="btn btn-outline-primary" href="{{ export_url }}">Download monthly PAP CSV</a>
+        {% endif %}
+        <a class="btn btn-outline-secondary" href="{% url 'completed_tasks:dashboard' %}">Back to Task Reporter</a>
+    </div>
+    <p class="text-body-secondary">PAP totals include every completion report status for the selected month. Each report contributes the PAP value configured on its task.</p>
+    <form method="get" class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-12 col-md-4">
+                    <label for="{{ form.month.id_for_label }}" class="form-label">{{ form.month.label }}</label>
+                    {{ form.month }}
+                    {{ form.month.errors }}
+                </div>
+                {% if departments %}
+                <div class="col-12 col-md-4">
+                    <label for="pap-department-filter" class="form-label">Department</label>
+                    <select id="pap-department-filter" name="department" class="form-select">
+                        <option value="">All permitted departments</option>
+                        {% for department in departments %}
+                        <option value="{{ department.pk }}"{% if selected_department == department.pk|stringformat:"s" %} selected{% endif %}>{{ department.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+                {% if has_all_report_access %}
+                <div class="col-12 col-md-4">
+                    <label for="pap-search" class="form-label">Pilot or character</label>
+                    <input id="pap-search" type="search" name="q" value="{{ search }}" class="form-control" placeholder="Search pilots or alts">
+                </div>
+                {% endif %}
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">Show PAP totals</button>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    {% if form_valid %}
+    <section class="card mb-4">
+        <div class="card-body">
+            <h2 class="h4">My total for {{ month|date:"F Y" }} <span class="badge text-bg-primary">{{ personal_report.pap_total }} PAP(s)</span></h2>
+            <p class="text-body-secondary">This account total combines reports from all characters credited to your Alliance Auth account{% if selected_department %} for the selected department{% endif %}.</p>
+            {% if personal_report.characters %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle mb-0">
+                    <thead><tr><th scope="col">Character / alt</th><th scope="col">PAP(s)</th><th scope="col">Reports</th></tr></thead>
+                    <tbody>
+                        {% for character in personal_report.characters %}
+                        <tr>
+                            <td>{{ character.character }}</td>
+                            <td>{{ character.pap_total }}</td>
+                            <td>{{ character.completion_count }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-body-secondary mb-0">No completion reports were recorded for you during this month.</p>
+            {% endif %}
+        </div>
+    </section>
+
+    {% if has_all_report_access %}
+    <section class="card">
+        <div class="card-body">
+            <h2 class="h4">All pilots for {{ month|date:"F Y" }}</h2>
+            <p class="text-body-secondary">Pilot rows show each account’s combined total. The indented character rows show the alt breakdown. Results include only departments you are authorized to view.</p>
+            {% if all_pilots %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle">
+                    <thead><tr><th scope="col">Pilot / character</th><th scope="col">PAP(s)</th><th scope="col">Reports</th></tr></thead>
+                    <tbody>
+                        {% for pilot in all_pilots %}
+                        <tr class="table-active">
+                            <th scope="row">{{ pilot.username }} — combined</th>
+                            <td><strong>{{ pilot.pap_total }}</strong></td>
+                            <td>{{ pilot.completion_count }}</td>
+                        </tr>
+                        {% for character in pilot.characters %}
+                        <tr>
+                            <td class="ps-4">{{ character.character }}</td>
+                            <td>{{ character.pap_total }}</td>
+                            <td>{{ character.completion_count }}</td>
+                        </tr>
+                        {% endfor %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-body-secondary mb-0">No completion reports match this month and filter.</p>
+            {% endif %}
+        </div>
+    </section>
+    {% endif %}
+    {% else %}
+    <div class="alert alert-danger" role="alert">Choose a valid month to view PAP totals.</div>
+    {% endif %}
+</div>
+{% endblock %}

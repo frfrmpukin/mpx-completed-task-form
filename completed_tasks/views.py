@@ -7,7 +7,7 @@ from django.contrib.auth.models import Group
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Count, Exists, OuterRef, Q
+from django.db.models import Count, Exists, OuterRef, Q, Sum
 from django.http import Http404, HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -18,6 +18,7 @@ from allianceauth.eveonline.models import EveCharacter
 from .forms import (
     COMPLETION_EXPORT_COLUMNS,
     CompletionReportFilterForm,
+    MonthlyPapReportForm,
     SuperadminCompletionForm,
     SuperadminTaskForm,
     TaskBulkCompletionForm,
@@ -128,6 +129,38 @@ def _filter_completions_by_date(completions, cleaned_data):
     if date_to:
         completions = completions.filter(completed_at__date__lte=date_to)
     return completions
+
+
+def _monthly_pap_rows(completions):
+    pilots = {}
+    rows = completions.values(
+        "user_id",
+        "user__username",
+        "character_id",
+        "character__character_name",
+    ).annotate(
+        pap_total=Sum("task__pap_value"),
+        completion_count=Count("pk"),
+    ).order_by("user__username", "character__character_name")
+    for row in rows:
+        pilot = pilots.setdefault(
+            row["user_id"],
+            {
+                "username": row["user__username"],
+                "pap_total": 0,
+                "completion_count": 0,
+                "characters": [],
+            },
+        )
+        character_row = {
+            "character": row["character__character_name"] or "No character recorded",
+            "pap_total": row["pap_total"] or 0,
+            "completion_count": row["completion_count"],
+        }
+        pilot["pap_total"] += character_row["pap_total"]
+        pilot["completion_count"] += character_row["completion_count"]
+        pilot["characters"].append(character_row)
+    return list(pilots.values())
 
 
 def _can_approve(task, user):
@@ -1014,6 +1047,187 @@ def all_completions(request):
             "export_url": export_url,
         },
     )
+
+
+@login_required
+@permission_required("completed_tasks.access_task_reports", raise_exception=True)
+def monthly_pap_report(request):
+    user = request.user
+    form_data = request.GET or {
+        "month": timezone.localdate().strftime("%Y-%m")
+    }
+    form = MonthlyPapReportForm(form_data)
+    form_valid = form.is_valid()
+    month = form.cleaned_data["month"] if form_valid else None
+    can_view_all = user.has_perm("completed_tasks.view_all_completions")
+    visible_departments = _department_groups_with_permission(
+        user, "view_department_completions"
+    )
+    has_all_report_access = can_view_all or visible_departments.exists()
+    departments = (
+        Group.objects.order_by("name")
+        if can_view_all
+        else visible_departments.order_by("name")
+    )
+    selected_department = request.GET.get("department", "")
+    if selected_department:
+        try:
+            department_id = int(selected_department)
+        except ValueError as error:
+            raise Http404("Department not found.") from error
+        if not departments.filter(pk=department_id).exists():
+            raise Http404("Department not found.")
+
+    personal_pilots = []
+    if month:
+        personal_completions = TaskCompletion.objects.filter(
+            user=user,
+            completed_at__year=month.year,
+            completed_at__month=month.month,
+        )
+        if selected_department:
+            personal_completions = personal_completions.filter(
+                task__department_group_id=selected_department
+            )
+        personal_pilots = _monthly_pap_rows(personal_completions)
+    personal_report = personal_pilots[0] if personal_pilots else {
+        "username": user.get_username(),
+        "pap_total": 0,
+        "completion_count": 0,
+        "characters": [],
+    }
+
+    all_pilots = []
+    if has_all_report_access and month:
+        report_completions = TaskCompletion.objects.filter(
+            completed_at__year=month.year,
+            completed_at__month=month.month,
+        )
+        if not can_view_all:
+            report_completions = report_completions.filter(
+                task__department_group__in=visible_departments
+            )
+        if selected_department:
+            report_completions = report_completions.filter(
+                task__department_group_id=selected_department
+            )
+        search = request.GET.get("q", "").strip()
+        if search:
+            report_completions = report_completions.filter(
+                Q(user__username__icontains=search)
+                | Q(character__character_name__icontains=search)
+            )
+        all_pilots = _monthly_pap_rows(report_completions)
+    else:
+        search = request.GET.get("q", "").strip()
+
+    can_export_all = user.has_perm("completed_tasks.export_all_completions")
+    export_departments = _department_groups_with_permission(
+        user, "export_department_completions"
+    )
+    can_export = form_valid and has_all_report_access and (
+        can_export_all
+        or (
+            bool(selected_department)
+            and export_departments.filter(pk=selected_department).exists()
+        )
+    )
+    export_url = reverse("completed_tasks:export_monthly_pap_report")
+    if request.GET:
+        export_url = f"{export_url}?{request.GET.urlencode()}"
+    return render(
+        request,
+        "completed_tasks/monthly_pap_report.html",
+        {
+            "form": form,
+            "form_valid": form_valid,
+            "month": month,
+            "departments": departments,
+            "selected_department": selected_department,
+            "search": search,
+            "personal_report": personal_report,
+            "all_pilots": all_pilots,
+            "has_all_report_access": has_all_report_access,
+            "can_export": can_export,
+            "export_url": export_url,
+        },
+    )
+
+
+@login_required
+@permission_required("completed_tasks.access_task_reports", raise_exception=True)
+def export_monthly_pap_report(request):
+    user = request.user
+    form_data = request.GET or {
+        "month": timezone.localdate().strftime("%Y-%m")
+    }
+    form = MonthlyPapReportForm(form_data)
+    if not form.is_valid():
+        return HttpResponseBadRequest("Choose a valid month before exporting.")
+    can_export_all = user.has_perm("completed_tasks.export_all_completions")
+    export_departments = _department_groups_with_permission(
+        user, "export_department_completions"
+    )
+    if not can_export_all and not export_departments.exists():
+        raise PermissionDenied
+
+    month = form.cleaned_data["month"]
+    completions = TaskCompletion.objects.filter(
+        completed_at__year=month.year,
+        completed_at__month=month.month,
+    )
+    if not can_export_all:
+        completions = completions.filter(
+            task__department_group__in=export_departments
+        )
+
+    selected_department = request.GET.get("department", "")
+    if selected_department:
+        try:
+            department_id = int(selected_department)
+        except ValueError as error:
+            raise Http404("Department not found.") from error
+        allowed_departments = (
+            Group.objects.all() if can_export_all else export_departments
+        )
+        if not allowed_departments.filter(pk=department_id).exists():
+            raise Http404("Department not found.")
+        completions = completions.filter(task__department_group_id=department_id)
+    search = request.GET.get("q", "").strip()
+    if search:
+        completions = completions.filter(
+            Q(user__username__icontains=search)
+            | Q(character__character_name__icontains=search)
+        )
+
+    response = HttpResponse(content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = (
+        f'attachment; filename="monthly-pap-{month:%Y-%m}.csv"'
+    )
+    response.write("\ufeff")
+    writer = csv.writer(response)
+    writer.writerow(("Report level", "Pilot", "Character", "PAP(s)", "Completions"))
+    for pilot in _monthly_pap_rows(completions):
+        writer.writerow(
+            (
+                "Pilot total",
+                _csv_cell(pilot["username"]),
+                "",
+                pilot["pap_total"],
+                pilot["completion_count"],
+            )
+        )
+        for character in pilot["characters"]:
+            writer.writerow(
+                (
+                    "Character",
+                    _csv_cell(pilot["username"]),
+                    _csv_cell(character["character"]),
+                    character["pap_total"],
+                    character["completion_count"],
+                )
+            )
+    return response
 
 
 @login_required

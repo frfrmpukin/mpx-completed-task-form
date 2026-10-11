@@ -26,6 +26,10 @@ the MPX Missed Meeting form.
 - The reports page can filter by department, status, search text, and an
   inclusive completed-date range. CSV exports can include any selected subset
   of report columns; all columns are included by default.
+- Members can view their monthly PAP total with a breakdown by registered
+  character. Users with completion-report permissions can see an all-pilot
+  monthly view within their authorized department scope and download a CSV.
+  Monthly PAP totals count all report statuses, including pending and denied.
 - Task creators and authorized bulk submitters can close ongoing tasks while
   preserving completion history.
 - Task creators and department task managers can edit tasks. Title and

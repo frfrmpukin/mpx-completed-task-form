@@ -48,4 +48,10 @@ urlpatterns = [
     ),
     path("reports/", views.all_completions, name="all_completions"),
     path("reports/export.csv", views.export_completions, name="export_completions"),
+    path("reports/monthly-pap/", views.monthly_pap_report, name="monthly_pap_report"),
+    path(
+        "reports/monthly-pap/export.csv",
+        views.export_monthly_pap_report,
+        name="export_monthly_pap_report",
+    ),
 ]

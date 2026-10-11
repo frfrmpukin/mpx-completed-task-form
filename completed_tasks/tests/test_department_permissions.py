@@ -21,6 +21,7 @@ from completed_tasks.views import (
     _can_manage_task,
     _department_groups_with_permission,
     export_completions,
+    export_monthly_pap_report,
 )
 
 
@@ -380,6 +381,83 @@ class DepartmentPermissionsTests(TestCase):
         self.assertNotContains(response, "Out of range")
         self.assertContains(response, f'value="{report_date}"')
         self.assertContains(response, "Select at least one CSV column to export.")
+
+    def test_monthly_pap_report_combines_all_statuses_for_personal_total(self):
+        self.task.pap_value = 2
+        self.task.save(update_fields=("pap_value",))
+        self.other_task.pap_value = 3
+        self.other_task.save(update_fields=("pap_value",))
+        TaskCompletion.objects.create(
+            task=self.task,
+            user=self.user,
+            status=TaskCompletion.Status.APPROVED,
+        )
+        TaskCompletion.objects.create(
+            task=self.other_task,
+            user=self.user,
+            status=TaskCompletion.Status.DENIED,
+        )
+        self.client.force_login(self.user)
+        month = timezone.localdate().strftime("%Y-%m")
+
+        response = self.client.get(
+            reverse("completed_tasks:monthly_pap_report"),
+            {"month": month},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "5 PAP(s)")
+        self.assertContains(response, "No character recorded")
+        self.assertEqual(response.context["personal_report"]["completion_count"], 2)
+
+    def test_monthly_pap_all_pilot_report_respects_department_scope(self):
+        other_user = get_user_model().objects.create_user(
+            username="other-pilot",
+            password="test-password",
+        )
+        TaskCompletion.objects.create(task=self.task, user=other_user)
+        TaskCompletion.objects.create(task=self.other_task, user=other_user)
+        self.client.force_login(self.user)
+
+        response = self.client.get(
+            reverse("completed_tasks:monthly_pap_report"),
+            {"month": timezone.localdate().strftime("%Y-%m")},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context["has_all_report_access"])
+        self.assertContains(response, "other-pilot")
+        self.assertEqual(len(response.context["all_pilots"]), 1)
+        self.assertEqual(response.context["all_pilots"][0]["pap_total"], 1)
+
+    def test_monthly_pap_csv_download_uses_department_export_scope(self):
+        self.task.pap_value = 4
+        self.task.save(update_fields=("pap_value",))
+        TaskCompletion.objects.create(
+            task=self.task,
+            user=self.user,
+            status=TaskCompletion.Status.DENIED,
+        )
+        other_user = get_user_model().objects.create_user(
+            username="other-pilot",
+            password="test-password",
+        )
+        TaskCompletion.objects.create(task=self.other_task, user=other_user)
+        request = RequestFactory().get(
+            "/task-reports/reports/monthly-pap/export.csv",
+            {
+                "month": timezone.localdate().strftime("%Y-%m"),
+                "department": str(self.department.pk),
+            },
+        )
+        request.user = self.user
+
+        response = export_monthly_pap_report(request)
+        body = response.content.decode("utf-8-sig")
+
+        self.assertEqual(response["Content-Type"], "text/csv; charset=utf-8")
+        self.assertIn("Pilot total,department-member,,4,1", body)
+        self.assertNotIn("other-pilot", body)
 
     def test_forms_mark_required_optional_and_conditional_fields(self):
         form = TaskForm(department_queryset=Group.objects.all())
