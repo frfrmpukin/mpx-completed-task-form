@@ -5,6 +5,10 @@ completions, routing required approvals, and keeping a completion history.
 It follows the Bootstrap 5 layout and Alliance Auth navigation pattern used by
 the MPX Missed Meeting form.
 
+> **[View the live Task Reporter mockup](https://frfrmpukin.github.io/mpx-completed-task-form/task-report-mockups.html)**
+>
+> This visual preview is hosted separately on GitHub Pages and is not the live Alliance Auth app.
+
 ## Features
 
 - Tasks belong to an Alliance Auth/Django department group and can be assigned
