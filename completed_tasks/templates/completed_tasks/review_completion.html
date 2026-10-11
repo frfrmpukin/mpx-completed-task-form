@@ -1,0 +1,35 @@
+{% extends "allianceauth/base-bs5.html" %}
+
+{% block page_title %}Review task completion{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row"><div class="col-12 col-xl-8">
+        <h1 class="h2 mb-2">Review task completion</h1>
+        <p class="text-body-secondary mb-4">
+            Your decision is recorded with your account and the review time.
+            An approval accepts the report; a revision returns it to the pilot;
+            a permanent denial cannot be resubmitted.
+        </p>
+        <div class="card mb-4"><div class="card-body">
+            <h2 class="h5 card-title">{{ completion.task.title }}</h2>
+            <dl class="row mb-0">
+                <dt class="col-sm-3">Pilot</dt><dd class="col-sm-9">{{ completion.character|default:completion.user }}</dd>
+                {% if completion.submitted_by and completion.submitted_by_id != completion.user_id %}
+                <dt class="col-sm-3">Submitted by</dt><dd class="col-sm-9">{{ completion.submitted_by }}</dd>
+                {% endif %}
+                <dt class="col-sm-3">Completed</dt><dd class="col-sm-9">{{ completion.completed_at|date:"M j, Y H:i" }}</dd>
+                <dt class="col-sm-3">Notes</dt><dd class="col-sm-9">{{ completion.notes|linebreaksbr|default:"—" }}</dd>
+            </dl>
+        </div></div>
+        <div class="card"><div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                {% include "completed_tasks/_form_fields.html" %}
+                <button type="submit" class="btn btn-primary">Save decision</button>
+                <a class="btn btn-outline-secondary" href="{% url 'completed_tasks:dashboard' %}">Cancel</a>
+            </form>
+        </div></div>
+    </div></div>
+</div>
+{% endblock %}

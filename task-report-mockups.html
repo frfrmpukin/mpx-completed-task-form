@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Task Reports — Page Mockups</title>
+<style>
+:root {
+    color-scheme: light;
+    --ink: #212529;
+    --muted: #6c757d;
+    --line: #dee2e6;
+    --blue: #0d6efd;
+    --navy: #182433;
+    --page: #f6f7f9;
+}
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    color: var(--ink);
+    background: var(--page);
+    font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+button, input, select, textarea { font: inherit; }
+.topbar {
+    height: 58px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 0 24px;
+    color: white;
+    background: var(--navy);
+}
+.brand { font-size: 16px; font-weight: 650; letter-spacing: .2px; }
+.topbar .section { color: #c6cfda; }
+.topbar .user { margin-left: auto; color: #d5dce5; }
+.layout { min-height: calc(100vh - 58px); display: grid; grid-template-columns: 220px minmax(0, 1fr); }
+aside { padding: 22px 12px; background: #fff; border-right: 1px solid var(--line); }
+.nav-label { padding: 8px 12px; color: #858e98; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.nav-item {
+    width: 100%;
+    padding: 10px 12px;
+    display: flex;
+    gap: 11px;
+    align-items: center;
+    color: #384454;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+}
+.nav-item:hover { background: #f1f4f8; }
+.nav-item.active { color: #084298; background: #e8f1ff; font-weight: 650; }
+.nav-icon { width: 18px; text-align: center; }
+main { max-width: 1250px; width: 100%; margin: 0 auto; padding: 30px 34px 50px; }
+.toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 5px; }
+h1 { margin: 0; font-size: 25px; line-height: 1.3; font-weight: 620; }
+h2 { margin: 0 0 15px; font-size: 18px; font-weight: 620; }
+h3 { margin: 0; font-size: 16px; font-weight: 620; }
+.spacer { flex: 1; }
+.subtle { margin: 5px 0 23px; color: var(--muted); }
+.screen { display: none; }
+.screen.active { display: block; }
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 35px;
+    padding: 7px 12px;
+    color: #fff;
+    border: 1px solid var(--blue);
+    border-radius: 5px;
+    background: var(--blue);
+    text-decoration: none;
+    cursor: pointer;
+}
+.btn.sm { min-height: 30px; padding: 4px 9px; font-size: 12px; }
+.btn.outline { color: #435266; border-color: #cbd2da; background: #fff; }
+.btn.danger { color: #bb2d3b; border-color: #e3a7ad; background: white; }
+.card { margin-bottom: 22px; border: 1px solid var(--line); border-radius: 7px; background: white; box-shadow: 0 1px 2px #15283a0b; }
+.card-body { padding: 19px 20px; }
+.card-head { display: flex; align-items: center; gap: 9px; margin-bottom: 15px; }
+.grid { display: grid; gap: 15px; }
+.grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.stat { padding: 15px 17px; border: 1px solid var(--line); border-radius: 7px; background: white; }
+.stat .label { color: var(--muted); font-size: 12px; }
+.stat .value { margin-top: 3px; font-size: 23px; font-weight: 650; }
+.task-title { font-weight: 640; }
+.task-card p { margin: 12px 0 16px; color: #545e69; }
+.badge { display: inline-block; padding: 4px 8px; border-radius: 20px; background: #e9ecef; color: #495057; font-size: 11px; white-space: nowrap; }
+.badge.blue { color: #084298; background: #cfe2ff; }
+.badge.yellow { color: #664d03; background: #fff3cd; }
+.badge.green { color: #0f5132; background: #d1e7dd; }
+.badge.red { color: #842029; background: #f8d7da; }
+.badge.gray { color: #495057; background: #e9ecef; }
+.badge.requirement-required { color: #842029; background: #f8d7da; border: 1px solid #f1aeb5; }
+.badge.requirement-optional { color: #0f5132; background: #d1e7dd; border: 1px solid #a3cfbb; }
+.badge.requirement-conditional { color: #664d03; background: #fff3cd; border: 1px solid #ffecb5; }
+.task-top { display: flex; align-items: start; gap: 7px; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 11px 12px; border-bottom: 1px solid #e9ecef; text-align: left; vertical-align: middle; }
+th { color: #566170; background: #f8f9fa; font-size: 12px; font-weight: 650; }
+tr:last-child td { border-bottom: 0; }
+.muted { color: var(--muted); }
+.notice { margin-bottom: 18px; padding: 12px 14px; border: 1px solid #b6d4fe; border-radius: 6px; color: #084298; background: #cfe2ff55; }
+.notice.warning { color: #664d03; border-color: #ffecb5; background: #fff3cd; }
+.form { max-width: 760px; }
+.form-section { margin: 0 0 18px; border: 1px solid var(--line); border-radius: 7px; background: white; box-shadow: 0 1px 2px #15283a0b; }
+.form-section-head { padding: 16px 19px 0; }
+.form-section-head p { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
+.form-section-body { padding: 15px 19px 2px; }
+.field { margin-bottom: 17px; }
+label { display: block; margin-bottom: 6px; font-weight: 600; }
+.help { margin-top: 4px; color: var(--muted); font-size: 12px; }
+input[type="text"], input[type="datetime-local"], input[type="number"], select, textarea {
+    width: 100%;
+    min-height: 38px;
+    padding: 8px 10px;
+    color: var(--ink);
+    border: 1px solid #ced4da;
+    border-radius: 5px;
+    background: white;
+}
+textarea { min-height: 92px; resize: vertical; }
+.check { display: flex; align-items: start; gap: 9px; }
+.check input { margin-top: 4px; accent-color: var(--blue); }
+.check label { margin: 0; font-weight: 500; }
+.radios { display: grid; gap: 8px; }
+.radios .check { padding: 9px 11px; border: 1px solid var(--line); border-radius: 5px; }
+.actions { display: flex; gap: 8px; margin-top: 8px; }
+.footer-note { margin-top: 10px; color: var(--muted); font-size: 12px; }
+@media (max-width: 760px) {
+    .layout { grid-template-columns: 1fr; }
+    aside { display: flex; gap: 5px; padding: 8px; border-right: 0; border-bottom: 1px solid var(--line); overflow-x: auto; }
+    .nav-label { display: none; }
+    .nav-item { width: auto; min-width: max-content; }
+    main { padding: 22px 16px 38px; }
+    .grid.two, .grid.three { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+    <div class="brand">Alliance Auth</div>
+    <div class="section">/</div>
+    <div class="section">Task Reporter</div>
+    <div class="user">Signed in as Pilot</div>
+</header>
+<div class="layout">
+    <aside aria-label="Mockup page navigation">
+        <div class="nav-label">Task Reporter</div>
+        <button class="nav-item active" data-screen="dashboard"><span class="nav-icon">▦</span> My dashboard</button>
+        <button class="nav-item" data-screen="create"><span class="nav-icon">＋</span> Create task</button>
+        <button class="nav-item" data-screen="submit"><span class="nav-icon">✓</span> Report completion</button>
+        <button class="nav-item" data-screen="review"><span class="nav-icon">◷</span> Review completion</button>
+        <button class="nav-item" data-screen="reports"><span class="nav-icon">▤</span> All reports</button>
+        <button class="nav-item" data-screen="pap-report"><span class="nav-icon">Σ</span> Monthly PAP totals</button>
+    </aside>
+    <main>
+        <section id="dashboard" class="screen active">
+            <div class="toolbar">
+                <h1>Task Reports</h1><span class="spacer"></span>
+                <button class="btn outline" data-go="pap-report">Monthly PAP totals</button>
+                <button class="btn outline" data-go="reports">All completion reports</button>
+                <button class="btn" data-go="create">＋ Create task</button>
+            </div>
+            <p class="subtle">Report completed work and review your submission history.</p>
+            <div class="grid three" style="margin-bottom:22px">
+                <div class="stat"><div class="label">Available tasks</div><div class="value">4</div></div>
+                <div class="stat"><div class="label">Awaiting your review</div><div class="value">2</div></div>
+                <div class="stat"><div class="label">Your approved reports</div><div class="value">12</div></div>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <div class="card-head"><h2 style="margin:0">Available tasks</h2><span class="badge">Assigned to you</span></div>
+                    <div class="grid two">
+                        <article class="card task-card" style="margin:0">
+                            <div class="card-body">
+                                <div class="task-top"><h3 class="task-title">Scan structures in a system</h3><span class="spacer"></span><span class="badge">Ongoing</span></div>
+                                <div class="muted" style="margin-top:7px">Department: Exploration</div>
+                                <span class="badge">2 PAP(s) per completion</span>
+                                <p>Scan the assigned system and submit the systems visited in your notes.</p>
+                                <span class="badge yellow">Approval required</span>
+                                <span class="badge">Limit: 3 per pilot</span>
+                                <div style="margin-top:14px;display:flex;gap:7px;flex-wrap:wrap"><button class="btn sm" data-go="submit">Report completion</button><button class="btn sm outline" data-go="bulk-submit">Report Bulk Completion</button><button class="btn sm outline" data-go="edit">Edit task</button><button class="btn sm danger">Close task</button></div>
+                                <div class="help">Workflow settings are locked because this task already has completion reports. The title and instructions can still be edited.</div>
+                            </div>
+                        </article>
+                        <article class="card task-card" style="margin:0">
+                            <div class="card-body">
+                                <div class="task-top"><h3 class="task-title">Submit a weekly activity summary</h3><span class="spacer"></span><span class="badge">Ongoing</span></div>
+                                <div class="muted" style="margin-top:7px">Department: Operations</div>
+                                <p>Summarize the work completed during your assigned activity.</p>
+                                <span class="badge green">No approval needed</span>
+                                <div style="margin-top:14px"><button class="btn sm" data-go="submit">Report completion</button></div>
+                            </div>
+                        </article>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <div class="card-head"><h2 style="margin:0">Awaiting your review</h2><span class="badge yellow">2 pending</span></div>
+                    <div class="table-wrap"><table>
+                        <thead><tr><th>Task</th><th>Pilot</th><th>Completed</th><th>Action</th></tr></thead>
+                        <tbody>
+                            <tr><td>Scan structures in a system</td><td>FrFrmPukin</td><td>Oct 10, 2026</td><td><button class="btn sm outline" data-go="review">Review</button></td></tr>
+                            <tr><td>Submit a weekly activity summary</td><td>Forlorn Gaeden</td><td>Oct 9, 2026</td><td><button class="btn sm outline" data-go="review">Review</button></td></tr>
+                        </tbody>
+                    </table></div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <h2>My completion history</h2>
+                    <div class="table-wrap"><table>
+                        <thead><tr><th>Task</th><th>Completed</th><th>Status</th><th>Notes</th><th>Review</th></tr></thead>
+                        <tbody>
+                            <tr><td>Scan structures in a system</td><td>Oct 8, 2026</td><td><span class="badge green">Approved</span></td><td>Scanned systems A and B.</td><td>Approved by Aptiva Rin</td></tr>
+                            <tr><td>Submit a weekly activity summary</td><td>Oct 6, 2026</td><td><span class="badge yellow">Pending approval</span></td><td>Completed patrol support.</td><td>Waiting for review</td></tr>
+                            <tr><td>Map a new route</td><td>Oct 3, 2026</td><td><span class="badge red">Revision requested</span></td><td>Route recorded.</td><td><button class="btn sm outline" data-go="submit">Revise and resubmit</button></td></tr>
+                        </tbody>
+                    </table></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="pap-report" class="screen">
+            <div class="toolbar"><h1>Monthly PAP totals</h1><span class="spacer"></span><button class="btn outline">Download monthly PAP CSV</button></div>
+            <p class="subtle">PAP totals include every completion report status. Each report contributes the PAP value configured on its task.</p>
+            <div class="card form">
+                <div class="card-body">
+                    <div class="grid three">
+                        <div><label>Month</label><input type="month" value="2026-10"></div>
+                        <div><label>Department</label><select><option>All permitted departments</option><option>Exploration</option><option>Operations</option></select></div>
+                        <div><label>Pilot or character</label><input type="search" placeholder="Search pilots or alts"></div>
+                    </div>
+                    <div class="actions"><button class="btn">Show PAP totals</button></div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <h2>My total for October 2026 <span class="badge">9 PAP(s)</span></h2>
+                    <p class="muted">This account total combines reports from all characters credited to your Alliance Auth account.</p>
+                    <div class="table-wrap"><table>
+                        <thead><tr><th>Character / alt</th><th>PAP(s)</th><th>Reports</th></tr></thead>
+                        <tbody>
+                            <tr><td>FrFrmPukin</td><td>5</td><td>2</td></tr>
+                            <tr><td>ShagGuru</td><td>1</td><td>1</td></tr>
+                            <tr><td>FarginIcicle</td><td>1</td><td>1</td></tr>
+                            <tr><td>MoistSquirt</td><td>1</td><td>1</td></tr>
+                            <tr><td>XKillerybunny</td><td>1</td><td>1</td></tr>
+                        </tbody>
+                    </table></div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <h2>All pilots for October 2026</h2>
+                    <p class="muted">Pilot rows combine each account’s PAP total; character rows show the alt breakdown. Results respect your authorized department scope.</p>
+                    <div class="table-wrap"><table>
+                        <thead><tr><th>Pilot / character</th><th>PAP(s)</th><th>Reports</th></tr></thead>
+                        <tbody>
+                            <tr><th>FrFrmPukin — combined</th><td><strong>9</strong></td><td>6</td></tr>
+                            <tr><td style="padding-left:30px">FrFrmPukin</td><td>5</td><td>2</td></tr>
+                            <tr><td style="padding-left:30px">ShagGuru</td><td>1</td><td>1</td></tr>
+                            <tr><td style="padding-left:30px">FarginIcicle</td><td>1</td><td>1</td></tr>
+                            <tr><td style="padding-left:30px">MoistSquirt</td><td>1</td><td>1</td></tr>
+                            <tr><td style="padding-left:30px">XKillerybunny</td><td>1</td><td>1</td></tr>
+                            <tr><th>Forlorn Gaeden — combined</th><td><strong>4</strong></td><td>3</td></tr>
+                            <tr><td style="padding-left:30px">Forlorn Gaeden</td><td>3</td><td>2</td></tr>
+                            <tr><td style="padding-left:30px">Taba LaRasa</td><td>1</td><td>1</td></tr>
+                            <tr><th>Aptiva Rin — combined</th><td><strong>4</strong></td><td>3</td></tr>
+                            <tr><td style="padding-left:30px">Aptiva Rin</td><td>2</td><td>2</td></tr>
+                            <tr><td style="padding-left:30px">Aptiva Allier</td><td>2</td><td>1</td></tr>
+                            <tr><th>Perle13 — combined</th><td><strong>4</strong></td><td>3</td></tr>
+                            <tr><td style="padding-left:30px">Perle13</td><td>3</td><td>2</td></tr>
+                            <tr><td style="padding-left:30px">Perle14</td><td>1</td><td>1</td></tr>
+                            <tr><th>Sonargod — combined</th><td><strong>3</strong></td><td>2</td></tr>
+                            <tr><td style="padding-left:30px">Sonargod</td><td>2</td><td>1</td></tr>
+                            <tr><td style="padding-left:30px">Seaman Cyno</td><td>1</td><td>1</td></tr>
+                        </tbody>
+                    </table></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="create" class="screen">
+            <h1>Create task</h1>
+            <p class="subtle">Set up the task step by step. Each section explains how its choices affect who can report work and what happens after submission.</p>
+            <div class="form">
+                <div class="notice"><span class="badge requirement-required">Required</span> Must be filled in. <span class="badge requirement-optional">Optional</span> Can be left blank. <span class="badge requirement-conditional">Conditional</span> Required only when the related option is enabled.</div>
+                <section class="form-section">
+                    <div class="form-section-head"><h2>1. Task details</h2><p>Name the work and explain what a member should do. Choose the department that owns this task; this affects department permissions and reporting.</p></div>
+                    <div class="form-section-body">
+                        <div class="field"><label>Task name <span class="badge requirement-required">Required</span></label><input type="text" value="Scan structures in a system"></div>
+                        <div class="field"><label>Instructions <span class="badge requirement-required">Required</span></label><textarea>Scan the requested structures. In your report, list the systems you visited. Structure details remain in the existing scanning module.</textarea><div class="help">Shown to members when they report completion.</div></div>
+                        <div class="field"><label>PAP value <span class="badge requirement-required">Required</span></label><input type="number" value="1" min="1"><div class="help">Default 1 PAP per completion. Tasks under 2 hours are typically 1 PAP; add 1 PAP for each additional 2-hour block. Pilots do not enter time, and this is not calculated automatically.</div></div>
+                        <div class="notice">Your department choices are limited to groups where you have task-creation permission. Admins with global permission can create tasks for any department.</div>
+                        <div class="field"><label>Department <span class="badge requirement-required">Required</span></label><select><option>Select an authorized department</option><option selected>Exploration</option></select></div>
+                    </div>
+                </section>
+                <section class="form-section">
+                    <div class="form-section-head"><h2>2. Who can complete this task?</h2><p>Anyone in a selected group or any selected individual can submit. Choose at least one group or individual.</p></div>
+                    <div class="form-section-body">
+                        <div class="field"><label>Assigned groups <span class="badge requirement-optional">Optional</span></label><select multiple size="3"><option selected>Exploration Pilots</option><option>Scouting Group</option><option>Specific individuals…</option></select><div class="help">Group and individual assignments are combined.</div></div>
+                        <div class="field"><label>Assigned individuals <span class="badge requirement-optional">Optional</span></label><select multiple size="3"><option>FrFrmPukin</option><option>Forlorn Gaeden</option><option>Aptiva Rin</option><option>Perle13</option><option>Sonargod</option></select></div>
+                        <div class="field check"><input type="checkbox" checked><label>Allow authorized bulk submissions <span class="badge requirement-optional">Optional</span><div class="help">An authorized department member can select multiple registered characters and submit one individual completion for each. Ongoing tasks only.</div></label></div>
+                    </div>
+                </section>
+                <section class="form-section">
+                    <div class="form-section-head"><h2>3. Completion approval</h2><p>Choose whether submissions are accepted right away or held for review by selected approvers.</p></div>
+                    <div class="form-section-body">
+                        <div class="field check"><input type="checkbox" checked><label>Each completion requires approval <span class="badge requirement-optional">Optional</span></label></div>
+                        <div class="field"><label>Approver groups <span class="badge requirement-conditional">Conditional</span></label><select multiple size="2"><option selected>Exploration Leads</option><option>Specific individuals…</option></select><div class="help">Required when approval is enabled. Any member of a selected group can review.</div></div>
+                        <div class="field"><label>Approver individuals <span class="badge requirement-conditional">Conditional</span></label><select multiple size="2"><option>Reviewer One</option><option>Reviewer Two</option></select></div>
+                    </div>
+                </section>
+                <section class="form-section">
+                    <div class="form-section-head"><h2>4. Repeat submissions and limits</h2><p>Decide whether the task closes after one accepted report or stays available. Optional caps are lifetime totals and do not reset on a schedule.</p></div>
+                    <div class="form-section-body">
+                        <div class="field"><label>Task type <span class="badge requirement-required">Required</span></label><select><option>One time — closes after approved completion</option><option selected>Ongoing — remains available for repeat completions</option></select></div>
+                        <div class="grid two">
+                            <div class="field"><label>Completion limit <span class="badge requirement-optional">Optional</span></label><input type="number" value="3" min="1"><div class="help">Leave blank for no cap. Pending, returned-for-revision and approved reports count; denied reports do not.</div></div>
+                            <div class="field"><label>Limit applies to <span class="badge requirement-optional">Optional</span></label><select><option selected>Each pilot individually</option><option>Everyone combined</option></select><div class="help">Only applies if a completion limit is set.</div></div>
+                        </div>
+                    </div>
+                </section>
+                <div class="actions"><button class="btn">Create task</button><button class="btn outline" data-go="dashboard">Cancel</button></div>
+            </div>
+        </section>
+
+        <section id="edit" class="screen">
+            <h1>Edit task</h1>
+            <p class="subtle">Correct task details without changing existing completion records.</p>
+            <div class="form">
+                <div class="notice">This task already has at least one completion report. The title and instructions remain editable. The department, eligible members, approval rules, frequency, completion limit, bulk-submission option, and PAP value are locked to preserve the rules that apply to existing and future reports.</div>
+                <div class="footer-note" style="margin:-5px 0 16px">Last edited by Aptiva Rin on Oct 10, 2026 at 2:42 PM.</div>
+                <section class="form-section">
+                    <div class="form-section-head"><h2>1. Task details</h2><p>Update the task title or instructions. Existing completion reports remain unchanged.</p></div>
+                    <div class="form-section-body">
+                        <div class="field"><label>Task name <span class="badge requirement-required">Required</span></label><input type="text" value="Scan TEZ and GEZ structures in a system."></div>
+                        <div class="field"><label>Instructions <span class="badge requirement-required">Required</span></label><textarea>Get 1 PAP per system. Report all structures via Indy Hub. All structures must either be TEZ or GEZ structures.</textarea></div>
+                    </div>
+                </section>
+                <section class="form-section">
+                    <div class="form-section-head"><h2>Workflow settings — locked</h2><p>These settings cannot be changed after completion reports exist.</p></div>
+                    <div class="form-section-body">
+                        <div class="field"><label>Assigned groups</label><select multiple disabled><option selected>Exploration Pilots</option></select></div>
+                        <div class="field check"><input type="checkbox" checked disabled><label>Each completion requires approval</label></div>
+                        <div class="field"><label>Task type</label><select disabled><option selected>One time</option></select></div>
+                        <div class="field"><label>PAP value</label><input type="number" value="2" disabled><div class="help">Locked after the first completion report so recorded work and future reports keep consistent task rules.</div></div>
+                    </div>
+                </section>
+                <div class="actions"><button class="btn">Save changes</button><button class="btn outline" data-go="dashboard">Cancel</button></div>
+            </div>
+        </section>
+
+        <section id="submit" class="screen">
+            <h1>Report task completion</h1>
+            <p class="subtle">Submit what you completed. The report will be added to your history.</p>
+            <div class="card form"><div class="card-body">
+                <div class="card" style="background:#f8f9fa"><div class="card-body">
+                    <div class="task-top"><h3>Scan structures in a system</h3><span class="spacer"></span><span class="badge yellow">Approval required</span></div>
+                    <p class="muted" style="margin:10px 0 0">Scan the requested structures. In your report, list the systems you visited.</p>
+                </div></div>
+                <div class="field"><label>Completion date and time <span class="badge requirement-required">Required</span></label><input type="datetime-local" value="2026-10-10T14:30"></div>
+                <div class="field"><label>Notes <span class="badge requirement-optional">Optional</span></label><textarea placeholder="Which systems did you scan? Include a brief summary of what you completed."></textarea><div class="help">Optional. Detailed structure data is handled by the existing module.</div></div>
+                <div class="notice">This task requires approval. Your report will appear as pending until it is reviewed.</div>
+                <div class="actions"><button class="btn">Submit completion</button><button class="btn outline" data-go="dashboard">Cancel</button></div>
+            </div></div>
+        </section>
+
+        <section id="bulk-submit" class="screen">
+            <h1>Report for multiple pilots</h1>
+            <p class="subtle">Each selected registered character receives an individual completion record. The account submitting this batch is retained for audit history.</p>
+            <div class="card form"><div class="card-body">
+                <div class="card" style="background:#f8f9fa"><div class="card-body">
+                    <div class="task-top"><h3>Scan structures in a system</h3><span class="spacer"></span><span class="badge yellow">Approval required</span></div>
+                    <p class="muted" style="margin:10px 0 0">Scan the requested structures. In your report, list the systems you visited. Structure details remain in the existing scanning module.</p>
+                </div></div>
+                <div class="field"><label>Registered characters <span class="badge requirement-required">Required</span></label><select multiple size="7"><option selected>FrFrmPukin — FrFrmPukin</option><option selected>ShagGuru — FrFrmPukin</option><option selected>FarginIcicle — FrFrmPukin</option><option>MoistSquirt — FrFrmPukin</option><option>XKillerybunny — FrFrmPukin</option><option>Taba LaRasa — Forlorn Gaeden</option><option>Aptiva Allier — Aptiva Rin</option></select><div class="help">Only characters owned by members assigned to this task appear. Choose each character who participated. Use Ctrl-click on Windows/Linux or Command-click on Mac to select multiple.</div></div>
+                <div class="field"><label>Completion date and time <span class="badge requirement-required">Required</span></label><input type="datetime-local" value="2026-10-10T14:30"></div>
+                <div class="field"><label>Notes copied to each report <span class="badge requirement-optional">Optional</span></label><textarea placeholder="Systems visited, operation details, or shared context"></textarea></div>
+                <div class="notice">This task requires approval. Each selected character gets a separate pending report; the same date and notes are copied to each. Users with bulk-submission permission can close the task from the dashboard when no more reports should be submitted.</div>
+                <div class="actions"><button class="btn">Submit 2 pilot reports</button><button class="btn outline" data-go="dashboard">Cancel</button></div>
+            </div></div>
+        </section>
+
+        <section id="review" class="screen">
+            <h1>Review task completion</h1>
+            <p class="subtle">Check the report and record a decision for the pilot.</p>
+            <div class="card form"><div class="card-body">
+                <div class="card" style="background:#f8f9fa"><div class="card-body">
+                    <h3 style="margin-bottom:13px">Scan structures in a system</h3>
+                    <div class="grid two">
+                        <div><div class="muted">Pilot</div><strong>FrFrmPukin</strong></div>
+                        <div><div class="muted">Completed</div><strong>October 10, 2026 at 14:30</strong></div>
+                        <div><div class="muted">Department</div><strong>Exploration</strong></div>
+                        <div><div class="muted">Current status</div><strong><span class="badge yellow">Pending approval</span></strong></div>
+                    </div>
+                    <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+                    <div class="muted">Pilot notes</div><div style="margin-top:4px">Scanned systems Aster, Orin, and Vela. Structure details are recorded in the scanning module.</div>
+                </div></div>
+                <div class="field"><label>Decision</label>
+                    <div class="radios">
+                        <div class="check"><input type="radio" name="decision" checked><label>Approve — completion is accepted and earns credit.</label></div>
+                        <div class="check"><input type="radio" name="decision"><label>Request revision — pilot can update and resubmit.</label></div>
+                        <div class="check"><input type="radio" name="decision"><label>Deny permanently — no resubmission.</label></div>
+                    </div>
+                </div>
+                <div class="field"><label>Feedback for pilot</label><textarea placeholder="Required for a revision request or permanent denial."></textarea></div>
+                <div class="actions"><button class="btn">Save decision</button><button class="btn outline" data-go="dashboard">Cancel</button></div>
+            </div></div>
+        </section>
+
+        <section id="reports" class="screen">
+            <div class="toolbar"><h1>Task completion reports</h1><span class="spacer"></span><button class="btn outline">Export CSV</button><button class="btn outline" data-go="dashboard">Back to dashboard</button></div>
+            <p class="subtle">Department-authorized users see and export their permitted departments. Administrators with global permissions can work across departments.</p>
+            <div class="grid three" style="margin-bottom:20px">
+                <div class="stat"><div class="label">Reports shown</div><div class="value">128</div></div>
+                <div class="stat"><div class="label">Pilots</div><div class="value">5</div></div>
+                <div class="stat"><div class="label">Departments</div><div class="value">5</div></div>
+            </div>
+            <div class="card"><div class="card-body">
+                <div class="grid three" style="margin-bottom:18px">
+                    <div><label>Department</label><select><option>All permitted departments</option><option>Exploration</option><option>Operations</option></select></div>
+                    <div><label>Status</label><select><option>All statuses</option><option>Pending approval</option><option>Approved</option><option>Revision requested</option><option>Denied</option></select></div>
+                    <div><label>Search pilot, task, or notes</label><input type="text" placeholder="Type to search…"></div>
+                    <div><label>Completed from</label><input type="date" value="2026-10-01"></div>
+                    <div><label>Completed through</label><input type="date" value="2026-10-10"></div>
+                </div>
+                <div class="field">
+                    <label>CSV columns</label>
+                    <div class="grid three">
+                        <label><input type="checkbox" checked> Department</label>
+                        <label><input type="checkbox" checked> Task</label>
+                        <label><input type="checkbox" checked> PAP(s)</label>
+                        <label><input type="checkbox" checked> Pilot</label>
+                        <label><input type="checkbox" checked> Submitted by</label>
+                        <label><input type="checkbox" checked> Completed at</label>
+                        <label><input type="checkbox" checked> Status</label>
+                        <label><input type="checkbox" checked> Notes</label>
+                        <label><input type="checkbox" checked> Reviewer</label>
+                        <label><input type="checkbox" checked> Reviewed at</label>
+                        <label><input type="checkbox" checked> Review notes</label>
+                    </div>
+                    <div class="help">Choose which fields to include in the CSV. The on-screen table keeps its standard columns.</div>
+                </div>
+                <div class="table-wrap"><table>
+                    <thead><tr><th>Department</th><th>Task</th><th>PAP(s)</th><th>Pilot</th><th>Completed</th><th>Status</th><th>Notes</th><th>Reviewer</th></tr></thead>
+                    <tbody>
+                        <tr><td>Exploration</td><td>Scan structures in a system</td><td>2</td><td>FrFrmPukin</td><td>Oct 10, 2026</td><td><span class="badge green">Approved</span></td><td>Systems Aster and Orin</td><td>Aptiva Rin</td></tr>
+                        <tr><td>Operations</td><td>Submit a weekly activity summary</td><td>1</td><td>Forlorn Gaeden</td><td>Oct 9, 2026</td><td><span class="badge yellow">Pending approval</span></td><td>Patrol and logistics activity.</td><td>—</td></tr>
+                        <tr><td>Exploration</td><td>Map a new route</td><td>1</td><td>Perle13</td><td>Oct 8, 2026</td><td><span class="badge red">Revision requested</span></td><td>Route submitted for review.</td><td>Sonargod</td></tr>
+                        <tr><td>Support</td><td>Assist a fleet operation</td><td>2</td><td>Aptiva Rin</td><td>Oct 7, 2026</td><td><span class="badge gray">Denied</span></td><td>Submitted outside the operation.</td><td>Forlorn Gaeden</td></tr>
+                    </tbody>
+                </table></div>
+                <div class="footer-note">The table and CSV follow the selected department, status, search, and date filters. The CSV includes only checked columns and remains limited to your authorized department scope. Global export access is controlled separately in Alliance Auth permissions.</div>
+            </div></div>
+        </section>
+    </main>
+</div>
+<script>
+function showScreen(id) {
+    document.querySelectorAll(".screen").forEach(function (screen) {
+        screen.classList.toggle("active", screen.id === id);
+    });
+    document.querySelectorAll(".nav-item").forEach(function (item) {
+        item.classList.toggle("active", item.dataset.screen === id);
+    });
+    window.scrollTo(0, 0);
+}
+document.querySelectorAll("[data-screen]").forEach(function (item) {
+    item.addEventListener("click", function () { showScreen(item.dataset.screen); });
+});
+document.querySelectorAll("[data-go]").forEach(function (item) {
+    item.addEventListener("click", function () { showScreen(item.dataset.go); });
+});
+</script>
+</body>
+</html>

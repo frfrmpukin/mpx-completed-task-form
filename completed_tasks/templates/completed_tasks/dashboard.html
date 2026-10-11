@@ -1,0 +1,200 @@
+{% extends "allianceauth/base-bs5.html" %}
+
+{% block page_title %}Task Reports{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12 col-xl-10">
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                <h1 class="h2 mb-0 me-auto">Task Reports</h1>
+                <a class="btn btn-outline-primary" href="{% url 'completed_tasks:monthly_pap_report' %}">Monthly PAP totals</a>
+                {% if user.is_superuser %}
+                <a class="btn btn-outline-danger" href="{% url 'completed_tasks:superadmin_records' %}">Superadmin Controls</a>
+                {% endif %}
+                {% if can_create_tasks %}
+                <a class="btn btn-primary" href="{% url 'completed_tasks:create_task' %}">Create task</a>
+                {% endif %}
+                {% if can_view_all %}
+                <a class="btn btn-outline-primary" href="{% url 'completed_tasks:all_completions' %}">All completion reports</a>
+                {% elif can_view_reports %}
+                <a class="btn btn-outline-primary" href="{% url 'completed_tasks:all_completions' %}">Department reports</a>
+                {% endif %}
+            </div>
+            <p class="text-body-secondary mb-4">
+                Report completed work and review your submission history.
+            </p>
+
+            {% if pending_reviews %}
+            <section class="card mb-4">
+                <div class="card-body">
+                    <h2 class="h5 card-title">Awaiting your review</h2>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr><th scope="col">Task</th><th scope="col">Pilot</th><th scope="col">Completed</th><th scope="col">Action</th></tr>
+                            </thead>
+                            <tbody>
+                                {% for completion in pending_reviews %}
+                                <tr>
+                                    <td>{{ completion.task.title }}</td>
+                                    <td>{{ completion.character|default:completion.user }}</td>
+                                    <td class="text-nowrap">{{ completion.completed_at|date:"M j, Y H:i" }}</td>
+                                    <td><a class="btn btn-sm btn-outline-primary" href="{% url 'completed_tasks:review' completion.pk %}">Review</a></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            {% endif %}
+
+            <section class="mb-4">
+                <h2 class="h4">Available tasks</h2>
+                {% if task_cards %}
+                <div class="row g-3">
+                    {% for task_card in task_cards %}
+                    {% with task=task_card.task %}
+                    <div class="col-12 col-lg-6">
+                        <article class="card h-100">
+                            <div class="card-body">
+                                <div class="d-flex align-items-start gap-2">
+                                    <h3 class="h5 card-title me-auto">{{ task.title }}</h3>
+                                    <span class="badge text-bg-secondary">{{ task.get_frequency_display }}</span>
+                                    {% if task.requires_approval %}<span class="badge text-bg-warning">Approval required</span>{% endif %}
+                                </div>
+                                <p class="small text-body-secondary">Department: {{ task.department_group.name|default:"Unassigned" }}</p>
+                                <p class="small"><span class="badge text-bg-info">{{ task.pap_value }} PAP(s)</span></p>
+                                <p class="card-text">{{ task.instructions|linebreaksbr }}</p>
+                                {% if task.max_completions %}
+                                <p class="small text-body-secondary">
+                                    Limit: {{ task.max_completions }} completion{{ task.max_completions|pluralize }}
+                                    {% if task.limit_scope == "per_user" %}per pilot{% else %}shared{% endif %}
+                                </p>
+                                {% endif %}
+                                {% if task_card.can_submit %}
+                                <a class="btn btn-sm btn-primary" href="{% url 'completed_tasks:submit' task.pk %}">Report completion</a>
+                                {% endif %}
+                                {% if task_card.can_bulk_submit %}
+                                <a class="btn btn-sm btn-outline-primary" href="{% url 'completed_tasks:bulk_submit' task.pk %}">Report Bulk Completion</a>
+                                {% endif %}
+                                {% if not task_card.can_submit and not task_card.can_bulk_submit and task_card.availability_message %}
+                                <p class="small text-body-secondary mb-0">{{ task_card.availability_message }}</p>
+                                {% endif %}
+                                {% if task_card.can_edit %}
+                                <a class="btn btn-sm btn-outline-secondary mt-2" href="{% url 'completed_tasks:edit_task' task.pk %}">Edit task</a>
+                                {% if task_card.has_completions %}
+                                <p class="small text-body-secondary mt-2 mb-0">Workflow settings are locked because this task already has completion reports. You can still edit the title and instructions.</p>
+                                {% endif %}
+                                {% endif %}
+                                {% if task_card.can_close %}
+                                <form method="post" action="{% url 'completed_tasks:close_task' task.pk %}" class="mt-2">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Close task</button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </article>
+                    </div>
+                    {% endwith %}
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="alert alert-secondary" role="status">There are no active tasks available to you.</div>
+                {% endif %}
+            </section>
+
+            {% if closed_tasks %}
+            <section class="mb-4">
+                <h2 class="h4">Closed tasks you can manage</h2>
+                <div class="row g-3">
+                    {% for task in closed_tasks %}
+                    <div class="col-12 col-lg-6">
+                        <article class="card h-100">
+                            <div class="card-body">
+                                <div class="d-flex align-items-start gap-2">
+                                    <h3 class="h5 card-title me-auto">{{ task.title }}</h3>
+                                    <span class="badge text-bg-secondary">Closed</span>
+                                </div>
+                                <p class="small text-body-secondary">Department: {{ task.department_group.name|default:"Unassigned" }}</p>
+                                <p class="small"><span class="badge text-bg-info">{{ task.pap_value }} PAP(s)</span></p>
+                                <p class="card-text">{{ task.instructions|linebreaksbr }}</p>
+                                {% if task.updated_by %}
+                                <p class="small text-body-secondary">Last edited by {{ task.updated_by }} on {{ task.updated_at|date:"M j, Y H:i" }}.</p>
+                                {% endif %}
+                                <a class="btn btn-sm btn-outline-secondary" href="{% url 'completed_tasks:edit_task' task.pk %}">Edit task</a>
+                                {% if task.has_completions %}
+                                <p class="small text-body-secondary mt-2 mb-0">Workflow settings are locked because this task already has completion reports. You can still edit the title and instructions.</p>
+                                {% endif %}
+                            </div>
+                        </article>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+            {% endif %}
+
+            {% if team_completions %}
+            <section class="mb-4">
+                <h2 class="h4">Task activity I can review</h2>
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover align-middle">
+                        <thead><tr><th scope="col">Department</th><th scope="col">Task</th><th scope="col">Pilot</th><th scope="col">Completed</th><th scope="col">Status</th><th scope="col">Notes</th><th scope="col">Reviewer</th></tr></thead>
+                        <tbody>
+                            {% for completion in team_completions %}
+                            <tr>
+                                <td>{{ completion.task.department_group.name|default:"Unassigned" }}</td>
+                                <td>{{ completion.task.title }}</td>
+                                <td>
+                                    {{ completion.character|default:completion.user }}
+                                    {% if completion.submitted_by and completion.submitted_by_id != completion.user_id %}
+                                    <div class="small text-body-secondary">Submitted by {{ completion.submitted_by }}</div>
+                                    {% endif %}
+                                </td>
+                                <td class="text-nowrap">{{ completion.completed_at|date:"M j, Y H:i" }}</td>
+                                <td>{{ completion.get_status_display }}</td>
+                                <td>{{ completion.notes|linebreaksbr|default:"—" }}</td>
+                                <td>{{ completion.reviewer|default:"—" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+            {% endif %}
+
+            <section>
+                <h2 class="h4">My completion history</h2>
+                {% if own_completions %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover align-middle">
+                        <thead><tr><th scope="col">Task</th><th scope="col">Pilot</th><th scope="col">Submitted by</th><th scope="col">Completed</th><th scope="col">Status</th><th scope="col">Notes</th><th scope="col">Review</th></tr></thead>
+                        <tbody>
+                            {% for completion in own_completions %}
+                            <tr>
+                                <td>{{ completion.task.title }}</td>
+                                <td>{{ completion.character|default:completion.user }}</td>
+                                <td>{% if completion.submitted_by and completion.submitted_by_id != completion.user_id %}{{ completion.submitted_by }}{% else %}—{% endif %}</td>
+                                <td class="text-nowrap">{{ completion.completed_at|date:"M j, Y H:i" }}</td>
+                                <td>{{ completion.get_status_display }}</td>
+                                <td>{{ completion.notes|linebreaksbr|default:"—" }}</td>
+                                <td>
+                                    {% if completion.review_notes %}{{ completion.review_notes|linebreaksbr }}{% else %}—{% endif %}
+                                    {% if completion.status == "revision_requested" %}
+                                    <a class="btn btn-sm btn-outline-primary d-block mt-2" href="{% url 'completed_tasks:revise' completion.pk %}">Revise and resubmit</a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-secondary" role="status">You have not submitted any task completions yet.</div>
+                {% endif %}
+            </section>
+        </div>
+    </div>
+</div>
+{% endblock %}
